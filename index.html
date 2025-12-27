@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MAE Academy - Robust Simulator</title>
+    <title>MAE Academy - High Precision</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -18,11 +18,10 @@
             min-height: 100vh; color: #000;
         }
 
-        /* --- HOME SCREEN --- */
+        /* --- UI LAYOUTS --- */
         #home-screen {
             display: flex; justify-content: center; align-items: center;
-            gap: 100px; width: 100%; max-width: 1200px;
-            flex-wrap: wrap;
+            gap: 100px; width: 100%; max-width: 1200px; flex-wrap: wrap;
         }
 
         .left-content { display: flex; flex-direction: column; gap: 15px; }
@@ -86,13 +85,19 @@
         button.btn-step { background: #000; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-family: 'DM Sans', sans-serif; transition: 0.2s;}
         button.btn-step:hover { background: #333; }
 
-        .math-display { font-family: 'Courier New', monospace; font-weight: bold; font-size: 0.85rem; color: #333; background: rgba(255,255,255,0.5); padding: 5px; border-radius: 4px;}
+        .status-badge {
+            display: inline-block; padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; margin-top: 5px;
+        }
+        .status-stable { background: #d4edda; color: #155724; }
+        .status-unstable { background: #f8d7da; color: #721c24; }
 
+        .math-display { font-family: 'Courier New', monospace; font-weight: bold; font-size: 0.85rem; color: #333; background: rgba(255,255,255,0.5); padding: 5px; border-radius: 4px;}
+        
         .warning-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.9); display: none;
-            justify-content: center; align-items: center; color: red; font-weight: bold;
-            z-index: 10; border-radius: 8px; text-align: center; padding: 20px;
+            background: rgba(255,255,255,0.95); display: none;
+            flex-direction: column; justify-content: center; align-items: center; 
+            color: #d32f2f; font-weight: bold; z-index: 10; border-radius: 8px; text-align: center;
         }
 
     </style>
@@ -133,7 +138,11 @@
                 <div class="panel">
                     <span class="panel-label">Step Response</span>
                     <canvas id="simCanvas" width="600" height="350"></canvas>
-                    <div id="sim-warning" class="warning-overlay">System Unstable!<br>Resetting...</div>
+                    <div id="sim-warning" class="warning-overlay">
+                        <div style="font-size:2rem; margin-bottom:10px;">⚠️</div>
+                        <div>System Unstable!</div>
+                        <div style="font-size:0.8rem; color:#555; margin-top:5px;">Reducing PID values and resetting...</div>
+                    </div>
                 </div>
                 <div class="panel">
                     <span class="panel-label">Root Locus</span>
@@ -184,12 +193,9 @@
 
                 <div class="control-column">
                     <div class="control-header">3. Status</div>
-                    <div class="math-display" id="math-roots">Calculating...</div>
-                    <div style="margin-top:10px; font-size:0.9rem;">
-                        <b>Graph Limits:</b><br>
-                        Vertical: -20 to 140<br>
-                        Horizontal: 0 to 10s
-                    </div>
+                    <div id="math-char-eq" class="math-display" style="margin-bottom:5px; font-size:0.75rem;">...</div>
+                    <div id="math-roots" class="math-display">Calculating...</div>
+                    <div id="status-badge" class="status-badge status-stable" style="margin-top:10px;">Stable</div>
                 </div>
             </div>
         </div>
@@ -210,16 +216,16 @@
         // --- Core Variables ---
         let canvas, ctx, sCanvas, sCtx;
         let sys = { order: 2, tau: 1.0, wn: 5.0, zeta: 0.5 };
-        let pid = { sp: 50, kp: 5.0, ki: 1.0, kd: 2.0 }; // Reduced defaults for stability
+        let pid = { sp: 50, kp: 5.0, ki: 1.0, kd: 2.0 };
         let state = { pv: 0, vel: 0, integ: 0, lastErr: 0 };
-        let history = []; // {sp, pv}
+        let history = []; 
+        const MAX_HISTORY = 600; // More points for smoother line
 
         function initSim() {
             canvas = document.getElementById('simCanvas');
             ctx = canvas.getContext('2d');
             sCanvas = document.getElementById('sPlaneCanvas');
             sCtx = sCanvas.getContext('2d');
-            
             bindInputs();
             updateUI();
             requestAnimationFrame(loop);
@@ -254,7 +260,6 @@
         function resetSim() {
             state = { pv: 0, vel: 0, integ: 0, lastErr: 0 };
             history = [];
-            // Hide warning
             document.getElementById('sim-warning').style.display = 'none';
         }
 
@@ -262,50 +267,58 @@
             pid.sp = (pid.sp === 50) ? 80 : 50;
         }
 
-        // --- Physics Loop ---
+        // --- PHYSICS ENGINE: SUB-STEPPING (THE FIX) ---
         function updatePhysics() {
-            const dt = 0.02; // 50Hz fixed step
-            const err = pid.sp - state.pv;
-            
-            // PID
-            state.integ += err * dt;
-            const P = pid.kp * err;
-            const I = pid.ki * state.integ;
-            const D = pid.kd * (err - state.lastErr) / dt;
-            const u = P + I + D;
+            // We run 20 tiny steps per frame to handle fast dynamics
+            const SUB_STEPS = 20;
+            const DT = 0.02 / SUB_STEPS; // Total 0.02s per frame, but divided
 
-            // Plant Safety Check
-            if (isNaN(u) || Math.abs(u) > 100000) { 
-                showCrash(); return; 
+            for(let i=0; i<SUB_STEPS; i++) {
+                const err = pid.sp - state.pv;
+                
+                // PID Term
+                const P = pid.kp * err;
+                state.integ += err * DT;
+                const I = pid.ki * state.integ;
+                // Derivative on Error (Standard PID)
+                const D = pid.kd * (err - state.lastErr) / DT;
+                const u = P + I + D;
+
+                // Plant Physics
+                if (sys.order === 1) {
+                    // 1st Order: y' = (u - y)/tau
+                    const y_dot = (u - state.pv) / sys.tau;
+                    state.pv += y_dot * DT;
+                } else {
+                    // 2nd Order: y'' = wn^2*u - 2*zeta*wn*y' - wn^2*y
+                    const w2 = sys.wn * sys.wn;
+                    const accel = (w2 * u) - (2 * sys.zeta * sys.wn * state.vel) - (w2 * state.pv);
+                    state.vel += accel * DT;
+                    state.pv += state.vel * DT;
+                }
+
+                state.lastErr = err;
+
+                // Safety Check (Inside loop to catch explosion early)
+                if (Math.abs(state.pv) > 10000 || isNaN(state.pv)) {
+                    handleCrash();
+                    return;
+                }
             }
 
-            if (sys.order === 1) {
-                // y' = (u - y)/tau
-                const y_dot = (u - state.pv) / sys.tau;
-                state.pv += y_dot * dt;
-            } else {
-                // y'' = wn^2*u - 2*zeta*wn*y' - wn^2*y
-                const force = (sys.wn*sys.wn*u) - (2*sys.zeta*sys.wn*state.vel) - (sys.wn*sys.wn*state.pv);
-                state.vel += force * dt;
-                state.pv += state.vel * dt;
-            }
-
-            // Global Stability Check
-            if (isNaN(state.pv) || Math.abs(state.pv) > 1000) {
-                showCrash();
-                state.pv = 0; state.vel = 0; state.integ = 0; // Soft reset
-            }
-
-            state.lastErr = err;
+            // Save history only once per frame
             history.push({ sp: pid.sp, pv: state.pv });
-            if(history.length > 400) history.shift();
+            if(history.length > MAX_HISTORY) history.shift();
         }
 
-        function showCrash() {
+        function handleCrash() {
             document.getElementById('sim-warning').style.display = 'flex';
-            setTimeout(() => {
-                resetSim(); // Auto reset after crash
-            }, 1500);
+            // Reset to safe values
+            pid.kp = 1.0; pid.ki = 0.0; pid.kd = 0.0;
+            document.getElementById('inp-kp').value = 1; document.getElementById('val-kp').innerText = 1;
+            document.getElementById('inp-ki').value = 0; document.getElementById('val-ki').innerText = 0;
+            document.getElementById('inp-kd').value = 0; document.getElementById('val-kd').innerText = 0;
+            setTimeout(() => { resetSim(); analyze(); }, 2000);
         }
 
         function loop() {
@@ -330,56 +343,62 @@
 
             if(history.length < 2) return;
 
-            // Draw SP
+            // SP
             ctx.beginPath(); ctx.strokeStyle = "#bbb"; ctx.setLineDash([5,5]); ctx.lineWidth = 2;
             history.forEach((h, i) => {
-                const x = (i/400)*canvas.width;
+                const x = (i/MAX_HISTORY)*canvas.width;
                 const y = mapY(h.sp);
                 i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
             });
             ctx.stroke();
 
-            // Draw PV
+            // PV
             ctx.beginPath(); ctx.strokeStyle = "#007bff"; ctx.setLineDash([]); ctx.lineWidth = 3;
             history.forEach((h, i) => {
-                const x = (i/400)*canvas.width;
+                const x = (i/MAX_HISTORY)*canvas.width;
                 const y = mapY(h.pv);
-                // Clamp Y for drawing only
-                const safeY = Math.max(-100, Math.min(canvas.height+100, y));
+                // Clamp Y drawing to prevent artifacting
+                const safeY = Math.max(-1000, Math.min(canvas.height+1000, y)); 
                 i===0 ? ctx.moveTo(x,safeY) : ctx.lineTo(x,safeY);
             });
             ctx.stroke();
         }
+        function mapY(val) { return canvas.height - ((val + 20) / 160) * canvas.height; }
 
-        function mapY(val) {
-            // Map -20..140 to Canvas Height
-            return canvas.height - ((val + 20) / 160) * canvas.height;
-        }
-
-        // --- Math & Roots ---
+        // --- Math & Analysis ---
         function analyze() {
             let roots = [];
+            let eqHTML = "";
             
             if (sys.order === 1) {
-                // A*s^2 + B*s + C = 0
                 const A = sys.tau + pid.kd;
                 const B = 1 + pid.kp;
                 const C = pid.ki;
+                eqHTML = `${A.toFixed(1)}s² + ${B.toFixed(1)}s + ${C.toFixed(1)} = 0`;
                 roots = solveQuad(A, B, C);
             } else {
-                // s^3 + B*s^2 + C*s + D = 0 (Normalized)
                 const w2 = sys.wn * sys.wn;
                 const B = 2*sys.zeta*sys.wn + w2*pid.kd;
                 const C = w2 + w2*pid.kp;
                 const D = w2*pid.ki;
+                eqHTML = `s³ + ${B.toFixed(1)}s² + ${C.toFixed(1)}s + ${D.toFixed(1)} = 0`;
                 roots = solveCubic(B, C, D);
             }
 
+            document.getElementById('math-char-eq').innerText = eqHTML;
+
             let txt = "";
+            let stable = true;
             roots.forEach(r => {
-                txt += `s = ${r.re.toFixed(2)} ± j${Math.abs(r.im).toFixed(2)}<br>`;
+                if(r.re > 0.001) stable = false;
+                txt += `s = ${r.re.toFixed(2)} ${r.im===0 ? '' : '± j'+Math.abs(r.im).toFixed(2)}<br>`;
             });
             document.getElementById('math-roots').innerHTML = txt || "Calculating...";
+            
+            const badge = document.getElementById('status-badge');
+            badge.innerText = stable ? "Stable" : "Unstable";
+            badge.className = "status-badge " + (stable ? "status-stable" : "status-unstable");
+
             drawSPlane(roots);
         }
 
@@ -391,11 +410,9 @@
         }
 
         function solveCubic(a, b, c) {
-            // x^3 + a*x^2 + b*x + c = 0
             const p = b - a*a/3;
             const q = 2*a*a*a/27 - a*b/3 + c;
             const d = q*q/4 + p*p*p/27;
-            
             let roots = [];
             if(d > 0) {
                 const u = Math.cbrt(-q/2 + Math.sqrt(d));
@@ -416,17 +433,10 @@
         function drawSPlane(roots) {
             sCtx.clearRect(0,0,300,350);
             const w=300, h=350, cx=w/2, cy=h/2, sc=10;
-            
-            // Axes
             sCtx.strokeStyle="#ccc"; sCtx.beginPath();
-            sCtx.moveTo(cx,0); sCtx.lineTo(cx,h);
-            sCtx.moveTo(0,cy); sCtx.lineTo(w,cy);
-            sCtx.stroke();
-
-            // Roots
+            sCtx.moveTo(cx,0); sCtx.lineTo(cx,h); sCtx.moveTo(0,cy); sCtx.lineTo(w,cy); sCtx.stroke();
             roots.forEach(r => {
-                const x = cx + r.re*sc; 
-                const y = cy - r.im*sc;
+                const x = cx + r.re*sc; const y = cy - r.im*sc;
                 if(x>-50 && x<w+50 && y>-50 && y<h+50) {
                     sCtx.strokeStyle="red"; sCtx.lineWidth=2; sCtx.beginPath();
                     sCtx.moveTo(x-4, y-4); sCtx.lineTo(x+4, y+4);
