@@ -1,1 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MAE Academy - Simulations</title>
+
+  <style>
+    body{
+      margin:0; padding:20px;
+      background:#e2efff;
+      font-family:"AppleGothic","DM Sans","Inter",system-ui,sans-serif;
+      min-height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+    }
+    .wrap{
+      width:min(1200px, 92vw);
+      margin-top:40px;
+    }
+    .back{
+      background:none;
+      border:none;
+      font-size:20px;
+      font-weight:900;
+      cursor:pointer;
+      margin-bottom:25px;
+    }
+    h1{
+      margin:0;
+      font-size:64px;
+      font-weight:900;
+      letter-spacing:-2px;
+    }
+    .sub{
+      margin:10px 0 30px;
+      font-size:22px;
+      font-weight:600;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(260px, 1fr));
+      gap:20px;
+    }
+
+    .card{
+      background:#fff;
+      border:3px solid #000;
+      border-radius:22px;
+      padding:22px;
+      box-shadow: 10px 10px 0 rgba(0,0,0,0.06);
+    }
+
+    .title{
+      font-size:26px;
+      font-weight:900;
+      margin-bottom:10px;
+    }
+    .desc{
+      font-size:16px;
+      font-weight:600;
+      opacity:0.75;
+      margin-bottom:18px;
+    }
+    .btn{
+      width:100%;
+      background:#000;
+      color:#fff;
+      border:none;
+      border-radius:14px;
+      padding:14px;
+      font-size:18px;
+      font-weight:900;
+      cursor:pointer;
+    }
+
+    @media (max-width: 800px){
+      .grid{ grid-template-columns:1fr; }
+      h1{ font-size:48px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="wrap">
+    <button class="back" onclick="location.href='../'">← Back to Home</button>
+
+    <h1>Simulations</h1>
+    <div class="sub">Choose a program</div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="title">Process Control</div>
+        <div class="desc">Time response + Root locus + PID tuning</div>
+        <button class="btn" onclick="location.href='process-control/'">Open</button>
+      </div>
+
+      <div class="card">
+        <div class="title">Power Electronics</div>
+        <div class="desc">Rectifiers, converters, waveforms (soon)</div>
+        <button class="btn" onclick="location.href='power-electronics/'">Open</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
 
