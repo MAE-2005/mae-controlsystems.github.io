@@ -1,1 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MAE Academy - Process Control</title>
+
+  <!-- Use AppleGothic first, then fallbacks -->
+  <style>
+    :root{
+      --bg:#e2efff;
+      --ink:#0b0b0b;
+      --muted:#666;
+      --panel:#ffffff;
+      --soft:#f8f9fa;
+      --border:#e9ecef;
+      --shadow: rgba(0,0,0,0.10);
+      --blue:#007bff;
+    }
+
+    *{ box-sizing:border-box; }
+
+    body{
+      margin:0;
+      padding:18px;
+      background:var(--bg);
+      font-family:"AppleGothic","DM Sans","Inter",system-ui,sans-serif;
+      color:#1a1a1a;
+      min-height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+      overflow-x:hidden;
+    }
+
+    .page{
+      width:min(1200px, 96vw);
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      padding-bottom:30px;
+    }
+
+    /* Top bar */
+    .topbar{
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      padding:10px 2px;
+    }
+
+    .left-top{
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+
+    .back-btn{
+      background:none;
+      border:none;
+      font-size:18px;
+      font-weight:900;
+      cursor:pointer;
+      color:#222;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:10px;
+      transition:transform .12s ease, background .12s ease;
+    }
+    .back-btn:hover{
+      background:rgba(255,255,255,0.6);
+      transform:translateX(-2px);
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      user-select:none;
+    }
+    .brand img{
+      width:34px;
+      height:34px;
+      object-fit:contain;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,0.08));
+    }
+    .brand .txt{
+      display:flex;
+      flex-direction:column;
+      line-height:1.05;
+    }
+    .brand .txt .t1{ font-weight:1000; font-size:16px; }
+    .brand .txt .t2{ font-weight:800; font-size:12px; opacity:0.7; }
+
+    .page-title{
+      font-size:22px;
+      font-weight:1000;
+      letter-spacing:-0.5px;
+      margin-left:2px;
+    }
+
+    /* Simulator container */
+    .sim-container{
+      background:var(--panel);
+      border-radius:16px;
+      box-shadow:0 10px 26px var(--shadow);
+      padding:18px;
+      animation:screenIn 420ms cubic-bezier(.2,.9,.2,1) both;
+    }
+    @keyframes screenIn{
+      from{ opacity:0; transform:translateY(10px); }
+      to{ opacity:1; transform:translateY(0); }
+    }
+
+    .visuals-row{
+      display:grid;
+      grid-template-columns: 2fr 1fr;
+      gap:16px;
+      margin-bottom:16px;
+    }
+    @media(max-width: 950px){
+      .visuals-row{ grid-template-columns:1fr; }
+    }
+
+    .panel{
+      border:1px solid #eee;
+      border-radius:14px;
+      padding:12px;
+      background:#fff;
+      position:relative;
+      transition:transform .15s ease, box-shadow .15s ease;
+    }
+    .panel:hover{
+      transform:translateY(-2px);
+      box-shadow:0 10px 18px rgba(0,0,0,0.06);
+    }
+
+    .panel-label{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      font-weight:900;
+      color:#333;
+      margin-bottom:10px;
+      font-size:14px;
+    }
+    .panel-label .small{
+      font-weight:800;
+      font-size:12px;
+      color:#666;
+      opacity:0.9;
+    }
+
+    canvas{
+      width:100%;
+      height:360px;
+      display:block;
+      border-radius:12px;
+      background:#fff;
+    }
+    #sPlaneCanvas{
+      background:#fafafa;
+    }
+
+    .hint{
+      margin-top:8px;
+      font-size:12px;
+      color:#666;
+      font-weight:700;
+    }
+
+    /* Warning overlay */
+    .warning-overlay{
+      position:absolute;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+      background:rgba(255,255,255,0.95);
+      border-radius:14px;
+      color:#d32f2f;
+      font-weight:1000;
+      z-index:10;
+      animation:shake 450ms ease both;
+      text-align:center;
+    }
+    @keyframes shake{
+      0%,100%{ transform:translateX(0); }
+      20%{ transform:translateX(-6px); }
+      40%{ transform:translateX(6px); }
+      60%{ transform:translateX(-4px); }
+      80%{ transform:translateX(4px); }
+    }
+
+    /* Controls area */
+    .controls-area{
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap:16px;
+      background:var(--soft);
+      padding:16px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      animation:fadeUp 520ms cubic-bezier(.2,.9,.2,1) both;
+    }
+    @keyframes fadeUp{
+      from{ opacity:0; transform:translateY(10px); }
+      to{ opacity:1; transform:translateY(0); }
+    }
+    @media(max-width: 950px){
+      .controls-area{ grid-template-columns:1fr; }
+    }
+
+    .control-column{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .control-header{
+      font-weight:1000;
+      font-size:14px;
+      letter-spacing:0.6px;
+      text-transform:uppercase;
+      border-bottom:2px solid #ddd;
+      padding-bottom:6px;
+      color:#222;
+    }
+
+    .control-group label{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      font-weight:800;
+      font-size:13px;
+      margin-bottom:6px;
+      color:#222;
+    }
+
+    input[type="range"]{
+      width:100%;
+      cursor:pointer;
+    }
+
+    select{
+      width:100%;
+      padding:10px;
+      border-radius:10px;
+      border:1px solid #ccc;
+      font-weight:900;
+      cursor:pointer;
+      background:#fff;
+      transition:box-shadow .12s ease;
+      font-family:"AppleGothic","DM Sans","Inter",system-ui,sans-serif;
+    }
+    select:focus{ outline:none; box-shadow:0 0 0 4px rgba(0,123,255,0.15); }
+
+    .mode-toggle{
+      display:flex;
+      background:#e9ecef;
+      border-radius:12px;
+      padding:4px;
+      gap:4px;
+      margin-bottom:6px;
+    }
+    .mode-btn{
+      flex:1;
+      border:none;
+      border-radius:10px;
+      padding:10px;
+      font-weight:1000;
+      cursor:pointer;
+      background:transparent;
+      color:#666;
+      transition:background .15s ease, transform .12s ease, box-shadow .15s ease;
+      font-family:"AppleGothic","DM Sans","Inter",system-ui,sans-serif;
+    }
+    .mode-btn.active{
+      background:#fff;
+      color:#000;
+      box-shadow:0 8px 18px rgba(0,0,0,0.10);
+    }
+    .mode-btn:active{ transform:scale(0.98); }
+
+    .btn-step{
+      width:100%;
+      border:none;
+      border-radius:12px;
+      padding:12px;
+      background:#000;
+      color:#fff;
+      font-weight:1000;
+      cursor:pointer;
+      transition:transform .12s ease, background .2s ease;
+      font-family:"AppleGothic","DM Sans","Inter",system-ui,sans-serif;
+    }
+    .btn-step:hover{ background:#333; transform:translateY(-2px); }
+    .btn-step:active{ transform:translateY(1px); }
+
+    .math-display{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-weight:900;
+      font-size:12px;
+      color:#333;
+      background:rgba(255,255,255,0.7);
+      padding:10px;
+      border-radius:12px;
+      border:1px solid #eee;
+      min-height:24px;
+      word-wrap:break-word;
+    }
+
+    .status-badge{
+      margin-top:8px;
+      width:100%;
+      text-align:center;
+      padding:10px;
+      border-radius:12px;
+      font-weight:1000;
+      font-size:14px;
+      transition:transform .18s ease;
+    }
+    .status-stable{ background:#d4edda; color:#155724; }
+    .status-unstable{ background:#f8d7da; color:#721c24; }
+    .status-badge.bump{ transform:scale(1.03); }
+
+    .miniNote{
+      font-size:12px;
+      font-weight:900;
+      color:#0b5ed7;
+      background:#e3f2fd;
+      padding:10px;
+      border-radius:12px;
+      line-height:1.25;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+
+    <div class="topbar">
+      <div class="left-top">
+        <button class="back-btn" onclick="location.href='../'">← Back to Simulations</button>
+        <div class="brand" title="MAE Academy">
+          <img src="../../assets/mae.svg" alt="MAE Logo">
+          <div class="txt">
+            <div class="t1">MAE Academy</div>
+            <div class="t2">Process Control Simulator</div>
+          </div>
+        </div>
+      </div>
+      <div class="page-title">Process Control</div>
+    </div>
+
+    <div class="sim-container">
+
+      <div class="visuals-row">
+        <div class="panel">
+          <div class="panel-label">
+            <span>Time Response</span>
+            <span class="small">Scroll on graph = adjust SP</span>
+          </div>
+
+          <canvas id="simCanvas" width="600" height="360"></canvas>
+
+          <div id="sim-warning" class="warning-overlay">
+            <div style="font-size:36px; margin-bottom:8px;">⚠️</div>
+            <div style="font-size:20px;">Unstable!</div>
+            <div style="font-size:13px; font-weight:900; margin-top:6px; color:#a11f1f;">System reset.</div>
+          </div>
+
+          <div class="hint">Tip: scroll to change SP (Shift = fast, Ctrl = fine)</div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-label">
+            <span>Root Locus (Poles)</span>
+            <span class="small">Closed-loop poles</span>
+          </div>
+          <canvas id="sPlaneCanvas" width="300" height="360"></canvas>
+        </div>
+      </div>
+
+      <div class="controls-area">
+
+        <!-- 1) Plant -->
+        <div class="control-column">
+          <div class="control-header">1. System Plant</div>
+
+          <div class="control-group">
+            <label>System Order</label>
+            <select id="sys-order" onchange="updateUI()">
+              <option value="1">1st Order (Thermal)</option>
+              <option value="2" selected>2nd Order (Spring-Mass)</option>
+              <option value="3">3rd Order (Motor + Inductance)</option>
+            </select>
+          </div>
+
+          <div class="control-group param-1st" style="display:none;">
+            <label>Time Constant (τ): <span id="val-tau">1.0</span>s</label>
+            <input type="range" id="inp-tau" min="0.5" max="5.0" step="0.1" value="1.0">
+          </div>
+
+          <div class="control-group param-2nd">
+            <label>Natural Freq (ωn): <span id="val-wn">5.0</span></label>
+            <input type="range" id="inp-wn" min="1" max="15" step="0.5" value="5.0">
+          </div>
+
+          <div class="control-group param-2nd">
+            <label>Damping Ratio (ζ): <span id="val-zeta">0.5</span></label>
+            <input type="range" id="inp-zeta" min="0" max="2.0" step="0.05" value="0.5">
+          </div>
+
+          <div class="control-group param-3rd" style="display:none;">
+            <label>Lag Pole (p): <span id="val-p3">10.0</span></label>
+            <input type="range" id="inp-p3" min="1" max="20" step="1" value="10.0">
+            <div class="hint">Adds pole at s = −p</div>
+          </div>
+        </div>
+
+        <!-- 2) Controller -->
+        <div class="control-column">
+          <div class="control-header">2. Controller</div>
+
+          <div class="mode-toggle">
+            <button class="mode-btn active" id="mode-manual" onclick="setMode('manual')">Manual (PID)</button>
+            <button class="mode-btn" id="mode-design" onclick="setMode('design')">Design (ζ, ω)</button>
+          </div>
+
+          <div id="ctrl-manual">
+            <div class="control-group">
+              <label>Kp: <span id="val-kp">5.0</span></label>
+              <input type="range" id="inp-kp" min="0" max="100" step="0.5" value="5.0">
+            </div>
+
+            <div class="control-group">
+              <label>Ki: <span id="val-ki">1.0</span></label>
+              <input type="range" id="inp-ki" min="0" max="50" step="0.5" value="1.0">
+            </div>
+
+            <div class="control-group">
+              <label>Kd: <span id="val-kd">2.0</span></label>
+              <input type="range" id="inp-kd" min="0" max="50" step="0.1" value="2.0">
+            </div>
+          </div>
+
+          <div id="ctrl-design" style="display:none;">
+            <div class="miniNote">Auto-calculates PID for target response (2nd order only)</div>
+
+            <div class="control-group" style="margin-top:10px;">
+              <label>Target ωn: <span id="val-twn">6.0</span></label>
+              <input type="range" id="inp-twn" min="1" max="20" step="0.5" value="6.0">
+            </div>
+
+            <div class="control-group">
+              <label>Target ζ: <span id="val-tzeta">0.7</span></label>
+              <input type="range" id="inp-tzeta" min="0.1" max="1.5" step="0.05" value="0.7">
+            </div>
+
+            <div class="miniNote" style="color:#111; background:#e3f2fd;">
+              Result: Kp=<span id="res-kp">--</span> &nbsp; Kd=<span id="res-kd">--</span>
+            </div>
+          </div>
+
+          <button class="btn-step" style="margin-top:8px;" onclick="triggerStep()">Trigger Step</button>
+        </div>
+
+        <!-- 3) Analysis -->
+        <div class="control-column">
+          <div class="control-header">3. Analysis</div>
+
+          <div style="font-size:12px; font-weight:900; color:#666;">Characteristic Equation:</div>
+          <div id="math-char-eq" class="math-display">...</div>
+
+          <div style="font-size:12px; font-weight:900; color:#666; margin-top:10px;">Closed-Loop Poles:</div>
+          <div id="math-roots" class="math-display">...</div>
+
+          <div id="status-badge" class="status-badge status-stable">Stable</div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // =========================
+    // Core Globals
+    // =========================
+    let canvas, ctx, sCanvas, sCtx;
+
+    let sys = { order: 2, tau: 1.0, wn: 5.0, zeta: 0.5, p3: 10.0 };
+    let pid = { sp: 50, kp: 5.0, ki: 1.0, kd: 2.0 };
+    let design = { wn: 6.0, zeta: 0.7 };
+
+    let state = { pv: 0, vel: 0, acc: 0, integ: 0, lastErr: 0 };
+    let history = [];
+
+    const MAX_HISTORY = 600;
+
+    // Time base for x-axis (history step)
+    const DT_FRAME = 0.02; // seconds per history sample (same as updatePhysics outer 0.02)
+    const Y_MIN = -20;
+    const Y_MAX = 140;
+
+    let controlMode = 'manual';
+    let lastStable = true;
+
+    // =========================
+    // Init
+    // =========================
+    init();
+
+    function init() {
+      canvas = document.getElementById('simCanvas');
+      ctx = canvas.getContext('2d');
+
+      sCanvas = document.getElementById('sPlaneCanvas');
+      sCtx = sCanvas.getContext('2d');
+
+      // Scroll-to-adjust SP (only on graph)
+      canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+
+        // sensitivity: normal = 1, Shift = 5, Ctrl = 0.2
+        const step = e.ctrlKey ? 0.2 : (e.shiftKey ? 5 : 1);
+
+        pid.sp += (e.deltaY < 0 ? step : -step);
+        pid.sp = Math.max(0, Math.min(125, pid.sp));
+      }, { passive: false });
+
+      bindInputs();
+      updateUI();
+      requestAnimationFrame(loop);
+    }
+
+    // =========================
+    // UI Logic
+    // =========================
+    function setMode(mode) {
+      controlMode = mode;
+
+      document.getElementById('mode-manual').className = mode === 'manual' ? 'mode-btn active' : 'mode-btn';
+      document.getElementById('mode-design').className = mode === 'design' ? 'mode-btn active' : 'mode-btn';
+
+      document.getElementById('ctrl-manual').style.display = mode === 'manual' ? 'block' : 'none';
+      document.getElementById('ctrl-design').style.display = mode === 'design' ? 'block' : 'none';
+
+      if (mode === 'design') runAutoTune();
+      analyze();
+    }
+
+    function bindInputs() {
+      const bind = (id, obj, key) => {
+        const el = document.getElementById(id);
+        el.addEventListener('input', e => {
+          obj[key] = parseFloat(e.target.value);
+          document.getElementById(id.replace('inp', 'val')).innerText = obj[key];
+          if (controlMode === 'design') runAutoTune();
+          analyze();
+        });
+      };
+
+      bind('inp-tau', sys, 'tau');
+      bind('inp-wn', sys, 'wn');
+      bind('inp-zeta', sys, 'zeta');
+      bind('inp-p3', sys, 'p3');
+
+      bind('inp-kp', pid, 'kp');
+      bind('inp-ki', pid, 'ki');
+      bind('inp-kd', pid, 'kd');
+
+      bind('inp-twn', design, 'wn');
+      bind('inp-tzeta', design, 'zeta');
+
+      // Mode buttons
+      document.getElementById('mode-manual').addEventListener('click', () => setMode('manual'));
+      document.getElementById('mode-design').addEventListener('click', () => setMode('design'));
+    }
+
+    function updateUI() {
+      sys.order = parseInt(document.getElementById('sys-order').value);
+
+      document.querySelectorAll('.param-1st').forEach(e => e.style.display = sys.order === 1 ? 'block' : 'none');
+      document.querySelectorAll('.param-2nd').forEach(e => e.style.display = (sys.order === 2 || sys.order === 3) ? 'block' : 'none');
+      document.querySelectorAll('.param-3rd').forEach(e => e.style.display = sys.order === 3 ? 'block' : 'none');
+
+      resetSim();
+
+      if (controlMode === 'design') runAutoTune();
+      analyze();
+    }
+
+    function runAutoTune() {
+      // Simple pole placement (2nd order only)
+      if (sys.order === 2) {
+        const ws2 = sys.wn * sys.wn;
+        const target_w2 = design.wn * design.wn;
+        const target_mid = 2 * design.zeta * design.wn;
+
+        const req_Kp = (target_w2 / ws2) - 1;
+        const req_Kd = (target_mid - (2 * sys.zeta * sys.wn)) / ws2;
+
+        pid.kp = Math.max(0, req_Kp);
+        pid.kd = Math.max(0, req_Kd);
+        pid.ki = 0.5;
+
+        document.getElementById('res-kp').innerText = pid.kp.toFixed(2);
+        document.getElementById('res-kd').innerText = pid.kd.toFixed(2);
+
+        // sync sliders
+        document.getElementById('inp-kp').value = pid.kp;
+        document.getElementById('val-kp').innerText = pid.kp.toFixed(2);
+
+        document.getElementById('inp-kd').value = pid.kd;
+        document.getElementById('val-kd').innerText = pid.kd.toFixed(2);
+
+        document.getElementById('inp-ki').value = pid.ki;
+        document.getElementById('val-ki').innerText = pid.ki.toFixed(2);
+      } else {
+        document.getElementById('res-kp').innerText = "N/A";
+        document.getElementById('res-kd').innerText = "N/A";
+      }
+    }
+
+    function resetSim() {
+      state = { pv: 0, vel: 0, acc: 0, integ: 0, lastErr: 0 };
+      history = [];
+      document.getElementById('sim-warning').style.display = 'none';
+    }
+
+    function triggerStep() {
+      pid.sp = (pid.sp === 50) ? 80 : 50;
+    }
+
+    // =========================
+    // Physics
+    // =========================
+    function updatePhysics() {
+      const SUB = 20;
+      const DT = 0.02 / SUB;
+
+      for (let i = 0; i < SUB; i++) {
+        const err = pid.sp - state.pv;
+        state.integ += err * DT;
+
+        const u =
+          (pid.kp * err) +
+          (pid.ki * state.integ) +
+          (pid.kd * (err - state.lastErr) / DT);
+
+        if (isNaN(u) || Math.abs(u) > 1e6) {
+          handleCrash();
+          return;
+        }
+
+        if (sys.order === 1) {
+          // 1st order: y' = (u - y)/tau
+          state.pv += ((u - state.pv) / sys.tau) * DT;
+        } else if (sys.order === 2) {
+          // 2nd order: y'' = w^2*u - 2*z*w*y' - w^2*y
+          const w2 = sys.wn * sys.wn;
+          const force = (w2 * u) - (2 * sys.zeta * sys.wn * state.vel) - (w2 * state.pv);
+          state.vel += force * DT;
+          state.pv += state.vel * DT;
+        } else if (sys.order === 3) {
+          // 3rd: (2nd order x) then 1st order lag to y
+          const w2 = sys.wn * sys.wn;
+          const force = (w2 * u) - (2 * sys.zeta * sys.wn * state.vel) - (w2 * state.acc);
+          state.vel += force * DT;
+          state.acc += state.vel * DT; // x
+
+          const y_dot = sys.p3 * (state.acc - state.pv);
+          state.pv += y_dot * DT;
+        }
+
+        state.lastErr = err;
+
+        if (Math.abs(state.pv) > 1e4) {
+          handleCrash();
+          return;
+        }
+      }
+
+      history.push({ sp: pid.sp, pv: state.pv });
+      if (history.length > MAX_HISTORY) history.shift();
+    }
+
+    function handleCrash() {
+      document.getElementById('sim-warning').style.display = 'flex';
+      setTimeout(() => resetSim(), 1500);
+    }
+
+    // =========================
+    // Analysis (Roots)
+    // =========================
+    function analyze() {
+      let roots = [];
+      let eqHTML = "";
+
+      if (sys.order === 1) {
+        // (tau + Kd)s^2 + (1+Kp)s + Ki = 0
+        const A = sys.tau + pid.kd;
+        const B = 1 + pid.kp;
+        const C = pid.ki;
+        eqHTML = `${A.toFixed(1)}s² + ${B.toFixed(1)}s + ${C.toFixed(1)} = 0`;
+        roots = solveQuad(A, B, C);
+      } else if (sys.order === 2) {
+        // s^3 + (2zw + w^2Kd)s^2 + (w^2 + w^2Kp)s + w^2Ki = 0
+        const w2 = sys.wn * sys.wn;
+        const B = 2 * sys.zeta * sys.wn + w2 * pid.kd;
+        const C = w2 + w2 * pid.kp;
+        const D = w2 * pid.ki;
+        eqHTML = `s³ + ${B.toFixed(1)}s² + ${C.toFixed(1)}s + ${D.toFixed(1)} = 0`;
+        roots = solveCubic(B, C, D);
+      } else {
+        // Approx (show dominant open-loop-ish poles)
+        eqHTML = "Order 4 (Analysis Approx)";
+        roots = [
+          { re: -sys.p3, im: 0 },
+          { re: -sys.zeta * sys.wn, im: sys.wn * Math.sqrt(Math.abs(1 - sys.zeta * sys.zeta)) },
+          { re: -sys.zeta * sys.wn, im: -sys.wn * Math.sqrt(Math.abs(1 - sys.zeta * sys.zeta)) }
+        ];
+      }
+
+      document.getElementById('math-char-eq').innerText = eqHTML;
+
+      let stable = true;
+      let txt = "";
+
+      roots.forEach(r => {
+        if (r.re > 0.001) stable = false;
+
+        const imAbs = Math.abs(r.im);
+        const imTxt = imAbs < 0.001 ? "" : `± j${imAbs.toFixed(1)}`;
+        txt += `s = ${r.re.toFixed(1)} ${imTxt}<br>`;
+      });
+
+      document.getElementById('math-roots').innerHTML = txt;
+
+      const badge = document.getElementById('status-badge');
+      badge.innerText = stable ? "Stable" : "Unstable";
+      badge.className = "status-badge " + (stable ? "status-stable" : "status-unstable");
+
+      if (stable !== lastStable) {
+        badge.classList.add('bump');
+        setTimeout(() => badge.classList.remove('bump'), 180);
+        lastStable = stable;
+      }
+
+      drawSPlane(roots);
+    }
+
+    function solveQuad(a, b, c) {
+      if (Math.abs(a) < 1e-5) return [{ re: -c / b, im: 0 }];
+
+      const d = b * b - 4 * a * c;
+      if (d >= 0) {
+        return [
+          { re: (-b + Math.sqrt(d)) / (2 * a), im: 0 },
+          { re: (-b - Math.sqrt(d)) / (2 * a), im: 0 }
+        ];
+      }
+      return [
+        { re: -b / (2 * a), im: Math.sqrt(-d) / (2 * a) },
+        { re: -b / (2 * a), im: -Math.sqrt(-d) / (2 * a) }
+      ];
+    }
+
+    function solveCubic(a, b, c) {
+      // x^3 + a x^2 + b x + c = 0
+      const p = b - a * a / 3;
+      const q = 2 * a * a * a / 27 - a * b / 3 + c;
+      const d = q * q / 4 + p * p * p / 27;
+
+      let roots = [];
+      if (d > 0) {
+        const u = Math.cbrt(-q / 2 + Math.sqrt(d));
+        const v = Math.cbrt(-q / 2 - Math.sqrt(d));
+        roots.push({ re: u + v - a / 3, im: 0 });
+        roots.push({ re: -(u + v) / 2 - a / 3, im: (u - v) * Math.sqrt(3) / 2 });
+        roots.push({ re: -(u + v) / 2 - a / 3, im: -(u - v) * Math.sqrt(3) / 2 });
+      } else {
+        const k = 2 * Math.sqrt(-p / 3);
+        const t = Math.acos(3 * q / (2 * p * k));
+        roots.push({ re: k * Math.cos(t / 3) - a / 3, im: 0 });
+        roots.push({ re: k * Math.cos((t + 2 * Math.PI) / 3) - a / 3, im: 0 });
+        roots.push({ re: k * Math.cos((t + 4 * Math.PI) / 3) - a / 3, im: 0 });
+      }
+      return roots;
+    }
+
+    // =========================
+    // Draw Loop
+    // =========================
+    function loop() {
+      updatePhysics();
+      drawGraph();
+      requestAnimationFrame(loop);
+    }
+
+    // =========================
+    // Time graph with time axis
+    // =========================
+    function drawGraph() {
+      ctx.clearRect(0, 0, 600, 360);
+
+      const W = 600, H = 360;
+      const LEFT_PAD = 46;
+      const RIGHT_PAD = 10;
+      const TOP_PAD = 14;
+      const BOTTOM_PAD = 30;
+
+      const plotX0 = LEFT_PAD;
+      const plotY0 = TOP_PAD;
+      const plotW = W - LEFT_PAD - RIGHT_PAD;
+      const plotH = H - TOP_PAD - BOTTOM_PAD;
+
+      const yToPix = (yVal) => {
+        const t = (yVal - Y_MIN) / (Y_MAX - Y_MIN);
+        return plotY0 + plotH - t * plotH;
+      };
+
+      const xToPix = (i) => plotX0 + (i / (MAX_HISTORY - 1)) * plotW;
+
+      // Grid Y + y labels
+      ctx.strokeStyle = "#eee";
+      ctx.fillStyle = "#777";
+      ctx.font = "10px system-ui";
+
+      [0, 25, 50, 75, 100, 125].forEach(v => {
+        const y = yToPix(v);
+        ctx.beginPath();
+        ctx.moveTo(plotX0, y);
+        ctx.lineTo(plotX0 + plotW, y);
+        ctx.stroke();
+
+        ctx.fillText(String(v), 10, y + 3);
+      });
+
+      // Axes
+      ctx.strokeStyle = "#cfcfcf";
+      ctx.lineWidth = 1.5;
+
+      ctx.beginPath();
+      ctx.moveTo(plotX0, plotY0);
+      ctx.lineTo(plotX0, plotY0 + plotH);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(plotX0, plotY0 + plotH);
+      ctx.lineTo(plotX0 + plotW, plotY0 + plotH);
+      ctx.stroke();
+
+      // Time axis ticks (seconds)
+      const totalTime = (MAX_HISTORY - 1) * DT_FRAME;
+      const tickEvery = 2; // seconds
+
+      ctx.fillStyle = "#666";
+      ctx.strokeStyle = "#ddd";
+      ctx.lineWidth = 1;
+
+      for (let t = 0; t <= totalTime + 1e-9; t += tickEvery) {
+        const i = t / DT_FRAME;
+        const x = plotX0 + (i / (MAX_HISTORY - 1)) * plotW;
+
+        ctx.beginPath();
+        ctx.moveTo(x, plotY0 + plotH);
+        ctx.lineTo(x, plotY0 + plotH + 6);
+        ctx.stroke();
+
+        ctx.fillText(`${t}s`, x - 10, plotY0 + plotH + 20);
+      }
+
+      // SP label
+      ctx.fillStyle = "#111";
+      ctx.font = "12px system-ui";
+      ctx.fillText(`SP: ${pid.sp.toFixed(1)} (scroll to adjust)`, plotX0, 12);
+
+      if (history.length < 2) return;
+
+      // SP dashed
+      ctx.beginPath();
+      ctx.strokeStyle = "#bbb";
+      ctx.setLineDash([6, 6]);
+      ctx.lineWidth = 2;
+
+      history.forEach((h, i) => {
+        const x = xToPix(i);
+        const y = yToPix(h.sp);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // PV solid
+      ctx.beginPath();
+      ctx.strokeStyle = "#007bff";
+      ctx.setLineDash([]);
+      ctx.lineWidth = 3;
+
+      history.forEach((h, i) => {
+        const x = xToPix(i);
+        let y = yToPix(h.pv);
+        y = Math.max(plotY0 - 200, Math.min(plotY0 + plotH + 200, y));
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
+
+    // =========================
+    // S-plane drawing
+    // =========================
+    function drawSPlane(roots) {
+      sCtx.clearRect(0, 0, 300, 360);
+
+      const w = 300, h = 360;
+      const cx = w / 2, cy = h / 2;
+      const sc = 10;
+
+      // axes
+      sCtx.strokeStyle = "#ccc";
+      sCtx.lineWidth = 1.5;
+      sCtx.beginPath();
+      sCtx.moveTo(cx, 0);
+      sCtx.lineTo(cx, h);
+      sCtx.moveTo(0, cy);
+      sCtx.lineTo(w, cy);
+      sCtx.stroke();
+
+      // poles
+      roots.forEach(r => {
+        const x = cx + r.re * sc;
+        const y = cy - r.im * sc;
+
+        if (x > -50 && x < w + 50 && y > -50 && y < h + 50) {
+          sCtx.strokeStyle = "red";
+          sCtx.lineWidth = 2.2;
+
+          sCtx.beginPath();
+          sCtx.moveTo(x - 6, y - 6);
+          sCtx.lineTo(x + 6, y + 6);
+          sCtx.moveTo(x + 6, y - 6);
+          sCtx.lineTo(x - 6, y + 6);
+          sCtx.stroke();
+        }
+      });
+    }
+  </script>
+</body>
+</html>
 
