@@ -3,9 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>16-bit Assembly Emulator (MASM-like)</title>
+  <title>MAE Academy — Assembler (16-bit)</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+
   <style>
     :root{
+      /* MAE feel */
+      --maeA:#08b58d;
+      --maeB:#3f6fff;
+
+      /* Dark lab UI */
       --bg:#0b1220;
       --panel:#0f1a2e;
       --panel2:#0c172b;
@@ -18,19 +29,95 @@
       --warn:#ffcc66;
       --shadow: 0 12px 30px rgba(0,0,0,.35);
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      --sans: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      --sans: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
     *{box-sizing:border-box}
+    html,body{height:100%}
+
     body{
       margin:0;
-      background: radial-gradient(900px 550px at 15% 5%, rgba(79,140,255,.18), transparent 55%),
-                  radial-gradient(900px 550px at 85% 15%, rgba(61,220,151,.12), transparent 55%),
-                  var(--bg);
+      background:
+        radial-gradient(900px 550px at 15% 5%, rgba(79,140,255,.18), transparent 55%),
+        radial-gradient(900px 550px at 85% 15%, rgba(61,220,151,.12), transparent 55%),
+        radial-gradient(900px 520px at 50% -10%, rgba(8,181,141,.10), transparent 60%),
+        var(--bg);
       color:var(--text);
       font-family:var(--sans);
       min-height:100vh;
-      padding:18px;
+      padding:16px;
     }
+
+    /* ----- MAE Top Bar ----- */
+    .topbar{
+      max-width:1500px;
+      margin:0 auto 14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px 14px;
+      border:1px solid var(--border);
+      border-radius:16px;
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      box-shadow: var(--shadow);
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width: 240px;
+    }
+    .logoMark{
+      width:44px;height:44px;border-radius:14px;
+      background: conic-gradient(from 220deg, var(--maeA), var(--maeB), var(--maeA));
+      position:relative;
+      overflow:hidden;
+      box-shadow: 0 14px 30px rgba(63,111,255,.18);
+      flex:0 0 auto;
+    }
+    .logoMark::after{
+      content:"";
+      position:absolute; inset:-60%;
+      background: radial-gradient(circle at 35% 35%, rgba(255,255,255,.75), transparent 55%);
+      animation: shimmer 5.6s ease-in-out infinite;
+    }
+    @keyframes shimmer{
+      0%,100%{transform:translate(12%,12%) rotate(0deg)}
+      50%{transform:translate(-12%,-12%) rotate(25deg)}
+    }
+    .brand .t{
+      display:flex; flex-direction:column; gap:2px;
+    }
+    .brand .t .h{
+      margin:0; font-size:14px; font-weight:900; letter-spacing:.2px;
+    }
+    .brand .t .p{
+      margin:0; font-size:12px; color:var(--muted); font-weight:650;
+    }
+
+    .topActions{display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; align-items:center;}
+    .btnTop{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      color:var(--text);
+      border-radius:14px;
+      padding:10px 12px;
+      font-weight:900;
+      cursor:pointer;
+      transition:.15s ease;
+      font-family:var(--sans);
+      user-select:none;
+      white-space:nowrap;
+      display:inline-flex; align-items:center; gap:8px;
+    }
+    .btnTop:hover{ border-color: rgba(79,140,255,.5); transform: translateY(-1px); }
+    .btnTop.primary{
+      border:none;
+      color:#07111d;
+      background: linear-gradient(135deg, rgba(8,181,141,.95), rgba(63,111,255,.90));
+    }
+
+    /* ----- Emulator Layout ----- */
     .app{
       max-width:1500px;
       margin:0 auto;
@@ -38,6 +125,7 @@
       grid-template-columns: 1.25fr .9fr;
       gap:16px;
     }
+
     header{
       grid-column:1/-1;
       display:flex;
@@ -62,7 +150,7 @@
       color:var(--text);
       border-radius:10px;
       padding:10px 12px;
-      font-weight:600;
+      font-weight:800;
       cursor:pointer;
       transition:.15s ease;
       font-family:var(--sans);
@@ -83,6 +171,14 @@
       border:1px solid var(--border);
       background: rgba(255,255,255,.03);
       user-select:none;
+    }
+    .pill code{
+      font-family:var(--mono);
+      background: rgba(255,255,255,.05);
+      padding:2px 6px;
+      border-radius:8px;
+      border:1px solid var(--border);
+      color: rgba(230,238,252,.92);
     }
 
     .panel{
@@ -165,15 +261,7 @@
       margin-top:10px;
       color:var(--muted);
       font-size:12px;
-      line-height:1.45;
-    }
-    .hint code{
-      font-family:var(--mono);
-      background: rgba(255,255,255,.05);
-      padding:2px 6px;
-      border-radius:8px;
-      border:1px solid var(--border);
-      color: rgba(230,238,252,.92);
+      line-height:1.55;
     }
 
     .rightGrid{
@@ -199,7 +287,7 @@
       font-size:12px;
       gap:10px;
     }
-    .kv .k{ color: rgba(159,176,208,.9); font-weight:700; }
+    .kv .k{ color: rgba(159,176,208,.9); font-weight:800; }
     .kv .v{ font-weight:900; }
 
     .flags{ display:flex; flex-wrap:wrap; gap:8px; }
@@ -226,7 +314,7 @@
       border-radius:10px;
       border:1px solid var(--border);
       background: rgba(255,255,255,.03);
-      font-weight:700;
+      font-weight:900;
       font-size:12px;
       cursor:pointer;
       user-select:none;
@@ -245,7 +333,7 @@
     .memBar input{
       cursor:text;
       font-family:var(--mono);
-      font-weight:700;
+      font-weight:900;
       width:170px;
     }
     .memDump{
@@ -273,17 +361,35 @@
       line-height:1.55;
       white-space:pre-wrap;
     }
-    .out .err{ color: var(--bad); font-weight:800; }
-    .out .warn{ color: var(--warn); font-weight:800; }
-    .out .ok{ color: var(--good); font-weight:800; }
+    .out .err{ color: var(--bad); font-weight:900; }
+    .out .warn{ color: var(--warn); font-weight:900; }
+    .out .ok{ color: var(--good); font-weight:900; }
 
     @media (max-width: 1100px){
       .app{ grid-template-columns:1fr; }
       .editorWrap{ height:540px; }
+      .topbar{ flex-wrap:wrap; }
+      .topActions{ justify-content:flex-start; }
     }
   </style>
 </head>
 <body>
+
+  <!-- MAE style top bar -->
+  <div class="topbar">
+    <div class="brand" onclick="location.href='../'" style="cursor:pointer" title="Back to Simulations">
+      <div class="logoMark" aria-hidden="true"></div>
+      <div class="t">
+        <p class="h">MAE Academy</p>
+        <p class="p">Assembler Simulator (16-bit)</p>
+      </div>
+    </div>
+    <div class="topActions">
+      <button class="btnTop" type="button" onclick="location.href='../'">← Back to Simulations</button>
+      <button class="btnTop primary" type="button" onclick="location.href='../../'">Home ↗</button>
+    </div>
+  </div>
+
   <div class="app">
     <header>
       <div class="title">
@@ -295,15 +401,18 @@
         <button class="good" id="stepBtn" title="F10">Step</button>
         <button class="bad" id="resetBtn" title="Ctrl+R">Reset</button>
         <button class="ghost" id="assembleBtn">Assemble</button>
+
         <select id="exampleSel" title="Load example">
           <option value="">Load example…</option>
           <option value="case">Toggle Case (your style)</option>
           <option value="data">DB/DW/DD + PTR demo</option>
         </select>
+
         <select id="baseSel" title="Display base">
           <option value="hex">HEX</option>
           <option value="dec">DEC</option>
         </select>
+
         <span class="pill" id="statusPill">Idle</span>
       </div>
     </header>
@@ -318,12 +427,13 @@
           <div class="gutter" id="gutter"></div>
           <textarea id="code" spellcheck="false"></textarea>
         </div>
+
         <div class="hint">
-          <b>Numbers:</b> <code>123</code>, <code>0x7B</code>, <code>7Bh</code> •
-          <b>Data:</b> <code>DB</code> <code>DW</code> <code>DD</code> (supports <code>"text"</code> and <code>'A'</code>) •
-          <b>Memory:</b> <code>[SI]</code> <code>[DI+2]</code> <code>[0x200]</code> •
-          <b>Size:</b> <code>BYTE PTR [..]</code>, <code>WORD PTR [..]</code>, <code>DWORD PTR [..]</code> •
-          <b>Addr:</b> <code>OFFSET label</code>
+          <b>Numbers:</b> <span class="pill"><code>123</code></span> <span class="pill"><code>0x7B</code></span> <span class="pill"><code>7Bh</code></span> &nbsp;•&nbsp;
+          <b>Data:</b> <span class="pill"><code>DB</code></span> <span class="pill"><code>DW</code></span> <span class="pill"><code>DD</code></span> (supports <code>"text"</code> and <code>'A'</code>) &nbsp;•&nbsp;
+          <b>Memory:</b> <span class="pill"><code>[SI]</code></span> <span class="pill"><code>[DI+2]</code></span> <span class="pill"><code>[0x200]</code></span> &nbsp;•&nbsp;
+          <b>Size:</b> <span class="pill"><code>BYTE PTR</code></span> <span class="pill"><code>WORD PTR</code></span> <span class="pill"><code>DWORD PTR</code></span> &nbsp;•&nbsp;
+          <b>Addr:</b> <span class="pill"><code>OFFSET label</code></span>
         </div>
       </div>
     </section>
@@ -376,8 +486,8 @@
         </div>
         <div class="bd">
           <div class="hint" style="margin:0">
-            • <code>ORG 100h</code> sets the <b>data pointer</b> (so <code>STR DB "ab"</code> becomes at 0100h).<br>
-            • If you write <code>MOV SI, STR</code> it loads STR address too, but <code>OFFSET STR</code> is supported as MASM.<br>
+            • <code>ORG 100h</code> sets the <b>data pointer</b> (so <code>STR: DB "ab"</code> becomes at 0100h).<br>
+            • You can use <code>MOV SI, OFFSET STR</code> (supported).<br>
             • Default memory read size is BYTE unless you specify <code>WORD PTR</code>/<code>DWORD PTR</code>.
           </div>
         </div>
@@ -399,8 +509,8 @@
   const regsGrid = el("regsGrid");
   const flagsRow = el("flagsRow");
 
-  const LS_CODE = "asm_emulator_code_v2";
-  const LS_BPS  = "asm_emulator_bps_v2";
+  const LS_CODE = "asm_emulator_code_v3";
+  const LS_BPS  = "asm_emulator_bps_v3";
 
   function setStatus(text, kind="idle"){
     statusPill.textContent = text;
@@ -427,7 +537,6 @@
 
   function clamp16(x){ return ((x % 0x10000) + 0x10000) & 0xFFFF; }
   function clamp8(x){ return ((x % 0x100) + 0x100) & 0xFF; }
-  function clamp32(x){ return (x >>> 0); }
 
   function parseNumber(tok){
     const t = tok.trim();
@@ -463,8 +572,7 @@
   let program = [];
   let ipToLine = new Map();
   let lineToIp = new Map();
-  let labels = new Map(); // label -> numeric address (code IP or memory address)
-  let labelKind = new Map(); // label -> "code" | "data"
+  let labels = new Map();
 
   // ORG / data pointer
   let dataPtrDefault = 0x0100;
@@ -475,6 +583,7 @@
 
   // ---- Editor gutter ----
   function getLines(){ return codeEl.value.replace(/\r\n/g,"\n").split("\n"); }
+
   function refreshGutter(){
     const lines = getLines();
     const activeLine = ipToLine.get(cpu.regs.IP) ?? null;
@@ -496,6 +605,7 @@
       gutterEl.appendChild(div);
     }
   }
+
   codeEl.addEventListener("input", () => {
     localStorage.setItem(LS_CODE, codeEl.value);
     program = [];
@@ -517,7 +627,6 @@
   }
 
   function tokenizeCommaAware(s){
-    // split by commas, but keep bracket expression intact
     const parts = [];
     let cur = "";
     let depth = 0;
@@ -530,12 +639,6 @@
     }
     if(cur.trim()) parts.push(cur.trim());
     return parts;
-  }
-
-  function escapeHtml(s){
-    return s.replace(/[&<>"']/g, m => ({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-    }[m]));
   }
 
   // ---- Register access (16/8) ----
@@ -575,97 +678,39 @@
       const v = value & 0xFF;
       cpu.flags.ZF = (v === 0) ? 1 : 0;
       cpu.flags.SF = ((v & 0x80) !== 0) ? 1 : 0;
-    }else if(width === 16){
+    }else{
       const v = value & 0xFFFF;
       cpu.flags.ZF = (v === 0) ? 1 : 0;
       cpu.flags.SF = ((v & 0x8000) !== 0) ? 1 : 0;
-    }else{ // 32
-      const v = value >>> 0;
-      cpu.flags.ZF = (v === 0) ? 1 : 0;
-      cpu.flags.SF = ((v & 0x80000000) !== 0) ? 1 : 0;
     }
   }
 
-  function addN(width, a, b){
-    if(width === 8){
-      const sum = a + b;
-      const res = sum & 0xFF;
-      cpu.flags.CF = (sum > 0xFF) ? 1 : 0;
-      const sa = (a & 0x80) !== 0, sb = (b & 0x80) !== 0, sr = (res & 0x80) !== 0;
-      cpu.flags.OF = (sa === sb && sa !== sr) ? 1 : 0;
-      setZS(8,res); return res;
-    }
-    if(width === 16){
-      const sum = a + b;
-      const res = sum & 0xFFFF;
-      cpu.flags.CF = (sum > 0xFFFF) ? 1 : 0;
-      const sa = (a & 0x8000) !== 0, sb = (b & 0x8000) !== 0, sr = (res & 0x8000) !== 0;
-      cpu.flags.OF = (sa === sb && sa !== sr) ? 1 : 0;
-      setZS(16,res); return res;
-    }
-    const sum = (a >>> 0) + (b >>> 0);
-    const res = sum >>> 0;
-    cpu.flags.CF = (sum > 0xFFFFFFFF) ? 1 : 0; // rarely meaningful in JS, but keep
-    const sa = (a & 0x80000000) !== 0, sb = (b & 0x80000000) !== 0, sr = (res & 0x80000000) !== 0;
+  function add16(a,b){
+    const sum = a + b;
+    const res = sum & 0xFFFF;
+    cpu.flags.CF = (sum > 0xFFFF) ? 1 : 0;
+    const sa = (a & 0x8000) !== 0, sb = (b & 0x8000) !== 0, sr = (res & 0x8000) !== 0;
     cpu.flags.OF = (sa === sb && sa !== sr) ? 1 : 0;
-    setZS(32,res); return res;
+    setZS(16,res);
+    return res;
   }
 
-  function subN(width, a, b){
-    if(width === 8){
-      const diff = a - b;
-      const res = diff & 0xFF;
-      cpu.flags.CF = (diff < 0) ? 1 : 0;
-      const sa = (a & 0x80) !== 0, sb = (b & 0x80) !== 0, sr = (res & 0x80) !== 0;
-      cpu.flags.OF = (sa !== sb && sa !== sr) ? 1 : 0;
-      setZS(8,res); return res;
-    }
-    if(width === 16){
-      const diff = a - b;
-      const res = diff & 0xFFFF;
-      cpu.flags.CF = (diff < 0) ? 1 : 0;
-      const sa = (a & 0x8000) !== 0, sb = (b & 0x8000) !== 0, sr = (res & 0x8000) !== 0;
-      cpu.flags.OF = (sa !== sb && sa !== sr) ? 1 : 0;
-      setZS(16,res); return res;
-    }
-    const diff = (a >>> 0) - (b >>> 0);
-    const res = diff >>> 0;
+  function sub16(a,b){
+    const diff = a - b;
+    const res = diff & 0xFFFF;
     cpu.flags.CF = (diff < 0) ? 1 : 0;
-    const sa = (a & 0x80000000) !== 0, sb = (b & 0x80000000) !== 0, sr = (res & 0x80000000) !== 0;
+    const sa = (a & 0x8000) !== 0, sb = (b & 0x8000) !== 0, sr = (res & 0x8000) !== 0;
     cpu.flags.OF = (sa !== sb && sa !== sr) ? 1 : 0;
-    setZS(32,res); return res;
+    setZS(16,res);
+    return res;
   }
 
-  // ---- Memory access (Little Endian) ----
+  // ---- Memory (Little Endian) ----
   function read8(addr){ return mem[addr & 0xFFFF] & 0xFF; }
   function write8(addr, v){ mem[addr & 0xFFFF] = clamp8(v); }
 
-  function read16(addr){
-    const a = addr & 0xFFFF;
-    return (read8(a) | (read8(a+1) << 8)) & 0xFFFF;
-  }
-  function write16(addr, v){
-    const a = addr & 0xFFFF;
-    const w = v & 0xFFFF;
-    write8(a, w & 0xFF);
-    write8(a+1, (w >> 8) & 0xFF);
-  }
-  function read32(addr){
-    const a = addr & 0xFFFF;
-    return (read8(a) | (read8(a+1) << 8) | (read8(a+2) << 16) | (read8(a+3) << 24)) >>> 0;
-  }
-  function write32(addr, v){
-    const a = addr & 0xFFFF;
-    const d = v >>> 0;
-    write8(a, d & 0xFF);
-    write8(a+1, (d >>> 8) & 0xFF);
-    write8(a+2, (d >>> 16) & 0xFF);
-    write8(a+3, (d >>> 24) & 0xFF);
-  }
-
   // ---- Operand parsing ----
   function parseMemInside(inside){
-    // supports: REG, REG+imm, imm+REG, imm, REG-imm, etc.
     let expr = inside.replace(/\s+/g,"");
     expr = expr.replace(/-/g,"+-");
     const chunks = expr.split("+").filter(Boolean);
@@ -675,9 +720,8 @@
 
     for(const c of chunks){
       const up = c.toUpperCase();
-      if(isReg16(up)){
-        baseReg = up;
-      }else{
+      if(isReg16(up)) baseReg = up;
+      else{
         const n = parseNumber(up);
         if(n === null) return { ok:false, error:`Bad memory expr: [${inside}]` };
         offset += n;
@@ -687,48 +731,33 @@
   }
 
   function parseOperand(raw){
-    // support: OFFSET label
     let t = raw.trim();
     if(!t) return { type:"bad", error:"Empty operand" };
-    let up = t.toUpperCase();
+    let up = t.toUpperCase().replace(/\s+/g," ").trim();
 
-    // remove extra tabs
-    up = up.replace(/\s+/g," ").trim();
-
-    // SIZE PTR [..]
-    // ex: BYTE PTR [SI], WORD PTR [0x200], DWORD PTR [BX+2]
-    let size = null; // 8/16/32
-    const ptrMatch = up.match(/^(BYTE|WORD|DWORD)\s+PTR\s+(.+)$/i);
+    let size = null; // 8/16
+    const ptrMatch = up.match(/^(BYTE|WORD)\s+PTR\s+(.+)$/i);
     if(ptrMatch){
-      size = ptrMatch[1].toUpperCase() === "BYTE" ? 8 :
-             ptrMatch[1].toUpperCase() === "WORD" ? 16 : 32;
+      size = ptrMatch[1].toUpperCase() === "BYTE" ? 8 : 16;
       up = ptrMatch[2].trim();
     }
 
-    // OFFSET label
     const offMatch = up.match(/^OFFSET\s+([A-Z_.$][A-Z0-9_.$]*)$/i);
-    if(offMatch){
-      return { type:"offset", name: offMatch[1], size: 16 };
-    }
+    if(offMatch) return { type:"offset", name: offMatch[1], size:16 };
 
-    // Register 16 / 8
-    if(isReg16(up)) return { type:"reg16", name: up, size: 16 };
-    if(isReg8(up))  return { type:"reg8",  name: up, size: 8  };
+    if(isReg16(up)) return { type:"reg16", name: up, size:16 };
+    if(isReg8(up))  return { type:"reg8",  name: up, size:8 };
 
-    // Memory [ ... ]
     if(up.startsWith("[") && up.endsWith("]")){
-      const inside = up.slice(1,-1);
-      const parsed = parseMemInside(inside);
+      const parsed = parseMemInside(up.slice(1,-1));
       if(!parsed.ok) return { type:"bad", error: parsed.error };
       return { type:"mem", baseReg: parsed.baseReg, offset: parsed.offset, size: size ?? 8 };
     }
 
-    // Immediate number?
     const num = parseNumber(up);
-    if(num !== null) return { type:"imm", value: num >>> 0, size: 16 };
+    if(num !== null) return { type:"imm", value: num >>> 0, size:16 };
 
-    // Label reference
-    if(/^[A-Z_.$][A-Z0-9_.$]*$/i.test(up)) return { type:"label", name: up, size: 16 };
+    if(/^[A-Z_.$][A-Z0-9_.$]*$/i.test(up)) return { type:"label", name: up, size:16 };
 
     return { type:"bad", error:`Unknown operand: ${raw}` };
   }
@@ -744,12 +773,9 @@
     if(op.type === "reg8")  return getReg8(op.name);
     if(op.type === "mem"){
       const a = addrOfMem(op);
-      if(op.size === 8)  return read8(a);
-      if(op.size === 16) return read16(a);
-      return read32(a);
+      return (op.size === 16) ? ((read8(a) | (read8(a+1) << 8)) & 0xFFFF) : read8(a);
     }
-    if(op.type === "resolved") return op.value >>> 0;
-    throw new Error("Bad eval operand");
+    throw new Error("Bad operand");
   }
 
   function writeOperand(op, value){
@@ -757,95 +783,80 @@
     if(op.type === "reg8"){ setReg8(op.name, value); return; }
     if(op.type === "mem"){
       const a = addrOfMem(op);
-      if(op.size === 8)  { write8(a, value); return; }
-      if(op.size === 16) { write16(a, value); return; }
-      write32(a, value); return;
+      if(op.size === 16){
+        const w = value & 0xFFFF;
+        write8(a, w & 0xFF);
+        write8(a+1, (w >> 8) & 0xFF);
+      }else{
+        write8(a, value);
+      }
+      return;
     }
-    throw new Error("Destination must be register or memory");
+    throw new Error("Destination must be reg or mem");
   }
 
-  // ---- DB/DW/DD parsing ----
+  // ---- DB/DW parsing ----
   function parseDataItems(argStr, directive){
-    // Returns array of bytes for DB/DW/DD
-    // Supports: numbers, "string", 'A'
     const items = tokenizeCommaAware(argStr);
     if(items.length === 0) return { ok:false, error:`${directive} needs values` };
 
     const bytes = [];
     const pushWord = (w) => { bytes.push(w & 0xFF, (w >> 8) & 0xFF); };
-    const pushDword = (d) => {
-      bytes.push(d & 0xFF, (d >>> 8) & 0xFF, (d >>> 16) & 0xFF, (d >>> 24) & 0xFF);
-    };
 
     for(const itRaw of items){
       const it = itRaw.trim();
       if(!it) continue;
 
-      // "string"
       const strMatch = it.match(/^"(.*)"$/);
       if(strMatch){
         const s = strMatch[1];
         for(let i=0;i<s.length;i++){
           const ch = s.charCodeAt(i) & 0xFF;
           if(directive === "DB") bytes.push(ch);
-          else if(directive === "DW") pushWord(ch);
-          else pushDword(ch);
+          else pushWord(ch);
         }
         continue;
       }
 
-      // 'A'
       const chrMatch = it.match(/^'(.*)'$/);
       if(chrMatch){
         const s = chrMatch[1];
         const ch = (s.length ? s.charCodeAt(0) : 0) & 0xFF;
         if(directive === "DB") bytes.push(ch);
-        else if(directive === "DW") pushWord(ch);
-        else pushDword(ch);
+        else pushWord(ch);
         continue;
       }
 
-      // number literal (supports 20h / 0x20 / 32)
       const n = parseNumber(it.toUpperCase());
-      if(n === null) return { ok:false, error:`${directive} value must be number or string (got "${it}")` };
+      if(n === null) return { ok:false, error:`${directive} value must be number/string (got "${it}")` };
 
       if(directive === "DB") bytes.push(n & 0xFF);
-      else if(directive === "DW") pushWord(n & 0xFFFF);
-      else pushDword(n >>> 0);
+      else pushWord(n & 0xFFFF);
     }
 
     return { ok:true, bytes };
   }
 
-  // ---- Assembler ----
+  // ---- Assembler (2-pass minimal) ----
   function assemble(){
     clearOutput();
     setStatus("Assembling…","run");
 
     const lines = getLines();
     labels = new Map();
-    labelKind = new Map();
     program = [];
     ipToLine = new Map();
     lineToIp = new Map();
-
-    // reset memory image
     mem.fill(0);
 
-    // reset ORG/data pointer
     dataPtr = dataPtrDefault;
 
-    // PASS 1: discover ORG early-ish, build labels for code and data, count IP
-    let ip = 0;
-    let sawAnyCode = false;
-
-    // First scan: allow ORG to set data origin before data directives
+    // pre-scan ORG
     for(let i=0;i<lines.length;i++){
       const ln = i+1;
       const raw = stripComment(lines[i]);
       if(!raw) continue;
-      const up = raw.toUpperCase().trim();
-      const m = up.match(/^ORG\s+(.+)$/);
+      const m = raw.toUpperCase().trim().match(/^ORG\s+(.+)$/);
       if(m){
         const n = parseNumber(m[1].trim());
         if(n === null){
@@ -854,20 +865,17 @@
           return false;
         }
         dataPtr = clamp16(n);
-        // do NOT break; allow multiple ORG but last wins before data used
       }
     }
 
-    // main pass1
+    // pass1: labels + data size + instruction count
+    let ip = 0;
     for(let i=0;i<lines.length;i++){
       const ln = i+1;
       let raw = stripComment(lines[i]);
       if(!raw) continue;
-
-      // Ignore ORG as instruction (already handled)
       if(/^ORG\s+/i.test(raw)) continue;
 
-      // label? can be before instruction OR data
       let rest = raw;
       const labelMatch = rest.match(/^([A-Z_.$][A-Z0-9_.$]*):/i);
       let labelName = null;
@@ -876,9 +884,8 @@
         rest = rest.slice(labelMatch[0].length).trim();
       }
 
-      // Determine if this line is data directive
       const upRest = rest.toUpperCase();
-      const isData = upRest.startsWith("DB ") || upRest.startsWith("DW ") || upRest.startsWith("DD ");
+      const isData = upRest.startsWith("DB ") || upRest.startsWith("DW ");
 
       if(labelName){
         if(labels.has(labelName)){
@@ -886,44 +893,31 @@
           setStatus("Assemble error","err");
           return false;
         }
-        if(isData){
-          labels.set(labelName, dataPtr);
-          labelKind.set(labelName, "data");
-        }else{
-          labels.set(labelName, ip);
-          labelKind.set(labelName, "code");
-        }
+        labels.set(labelName, isData ? dataPtr : ip);
       }
 
       if(!rest) continue;
 
       if(isData){
-        const dir = upRest.slice(0,2); // DB/DW/DD
-        const argStr = rest.slice(2).trim();
-        const parsed = parseDataItems(argStr, dir);
+        const dir = upRest.slice(0,2); // DB/DW
+        const parsed = parseDataItems(rest.slice(2).trim(), dir);
         if(!parsed.ok){
           logLine(`Line ${ln}: ${parsed.error}`, "err");
           setStatus("Assemble error","err");
           return false;
         }
         dataPtr = clamp16(dataPtr + parsed.bytes.length);
-        continue;
+      }else{
+        ip++;
       }
-
-      // Otherwise instruction
-      sawAnyCode = true;
-      ip++;
     }
 
-    // PASS 2: build program and write data bytes to memory
+    // pass2: emit data + program
     dataPtr = dataPtrDefault;
-    // Re-apply ORG before writing actual data
     for(let i=0;i<lines.length;i++){
-      const ln = i+1;
       const raw = stripComment(lines[i]);
       if(!raw) continue;
-      const up = raw.toUpperCase().trim();
-      const m = up.match(/^ORG\s+(.+)$/);
+      const m = raw.toUpperCase().trim().match(/^ORG\s+(.+)$/);
       if(m){
         const n = parseNumber(m[1].trim());
         if(n !== null) dataPtr = clamp16(n);
@@ -936,10 +930,8 @@
       const rawLine = lines[i];
       let raw = stripComment(rawLine);
       if(!raw) continue;
-
       if(/^ORG\s+/i.test(raw)) continue;
 
-      // label inline
       let rest = raw;
       const labelMatch = rest.match(/^([A-Z_.$][A-Z0-9_.$]*):/i);
       if(labelMatch){
@@ -948,12 +940,9 @@
       }
 
       const upRest = rest.toUpperCase();
-
-      // data directive
-      if(upRest.startsWith("DB ") || upRest.startsWith("DW ") || upRest.startsWith("DD ")){
-        const dir = upRest.slice(0,2); // DB/DW/DD
-        const argStr = rest.slice(2).trim();
-        const parsed = parseDataItems(argStr, dir);
+      if(upRest.startsWith("DB ") || upRest.startsWith("DW ")){
+        const dir = upRest.slice(0,2);
+        const parsed = parseDataItems(rest.slice(2).trim(), dir);
         if(!parsed.ok){
           logLine(`Line ${ln}: ${parsed.error}`, "err");
           setStatus("Assemble error","err");
@@ -966,7 +955,6 @@
         continue;
       }
 
-      // instruction parse
       const parts = rest.trim().split(/\s+/);
       const op = parts[0].toUpperCase();
       const operandStr = rest.slice(parts[0].length).trim();
@@ -981,36 +969,33 @@
         }
       }
 
+      // resolve labels + OFFSET
+      for(let k=0;k<args.length;k++){
+        const a = args[k];
+        if(a.type === "label"){
+          const val = labels.get(a.name.toUpperCase());
+          if(val === undefined){
+            logLine(`Line ${ln}: Unknown label "${a.name}"`, "err");
+            setStatus("Assemble error","err");
+            return false;
+          }
+          args[k] = { type:"imm", value: val >>> 0, size:16 };
+        }
+        if(a.type === "offset"){
+          const val = labels.get(a.name.toUpperCase());
+          if(val === undefined){
+            logLine(`Line ${ln}: Unknown label "${a.name}"`, "err");
+            setStatus("Assemble error","err");
+            return false;
+          }
+          args[k] = { type:"imm", value: val >>> 0, size:16 };
+        }
+      }
+
       program.push({ op, args, line: ln, src: rawLine });
       lineToIp.set(ln, ip);
       ipToLine.set(ip, ln);
       ip++;
-    }
-
-    // Resolve labels + OFFSET
-    for(const inst of program){
-      for(let k=0;k<inst.args.length;k++){
-        const a = inst.args[k];
-        if(a.type === "label"){
-          const name = a.name.toUpperCase();
-          const val = labels.get(name);
-          if(val === undefined){
-            logLine(`Line ${inst.line}: Unknown label "${a.name}"`, "err");
-            setStatus("Assemble error","err");
-            return false;
-          }
-          inst.args[k] = { type:"imm", value: val >>> 0, size:16 };
-        }else if(a.type === "offset"){
-          const name = a.name.toUpperCase();
-          const val = labels.get(name);
-          if(val === undefined){
-            logLine(`Line ${inst.line}: Unknown label "${a.name}"`, "err");
-            setStatus("Assemble error","err");
-            return false;
-          }
-          inst.args[k] = { type:"imm", value: val >>> 0, size:16 };
-        }
-      }
     }
 
     logLine("Assemble OK ✅", "ok");
@@ -1070,7 +1055,7 @@
           const w = a0.size ?? (a0.type==="reg8"?8:16);
           const left = evalOperand(a0);
           const right = evalOperand(a1);
-          const res = addN(w, left, right);
+          const res = (w===8) ? ((left + right) & 0xFF) : add16(left, right);
           writeOperand(a0, res);
           cpu.regs.IP = nextIP; cpu.cycles++;
           break;
@@ -1081,7 +1066,7 @@
           const w = a0.size ?? (a0.type==="reg8"?8:16);
           const left = evalOperand(a0);
           const right = evalOperand(a1);
-          const res = subN(w, left, right);
+          const res = (w===8) ? ((left - right) & 0xFF) : sub16(left, right);
           writeOperand(a0, res);
           cpu.regs.IP = nextIP; cpu.cycles++;
           break;
@@ -1092,20 +1077,8 @@
           const w = a0.size ?? (a0.type==="reg8"?8:16);
           const v = evalOperand(a0);
           const oldCF = cpu.flags.CF;
-          const res = addN(w, v, 1);
-          cpu.flags.CF = oldCF; // like x86
-          writeOperand(a0, res);
-          cpu.regs.IP = nextIP; cpu.cycles++;
-          break;
-        }
-
-        case "DEC":{
-          if(inst.args.length !== 1) throw new Error("DEC needs 1 operand");
-          const w = a0.size ?? (a0.type==="reg8"?8:16);
-          const v = evalOperand(a0);
-          const oldCF = cpu.flags.CF;
-          const res = subN(w, v, 1);
-          cpu.flags.CF = oldCF; // like x86
+          const res = (w===8) ? ((v + 1) & 0xFF) : add16(v, 1);
+          cpu.flags.CF = oldCF;
           writeOperand(a0, res);
           cpu.regs.IP = nextIP; cpu.cycles++;
           break;
@@ -1115,17 +1088,6 @@
           if(inst.args.length !== 2) throw new Error("AND needs 2 operands");
           const w = a0.size ?? (a0.type==="reg8"?8:16);
           const res = (evalOperand(a0) & evalOperand(a1)) >>> 0;
-          cpu.flags.CF=0; cpu.flags.OF=0;
-          setZS(w,res);
-          writeOperand(a0,res);
-          cpu.regs.IP = nextIP; cpu.cycles++;
-          break;
-        }
-
-        case "OR":{
-          if(inst.args.length !== 2) throw new Error("OR needs 2 operands");
-          const w = a0.size ?? (a0.type==="reg8"?8:16);
-          const res = (evalOperand(a0) | evalOperand(a1)) >>> 0;
           cpu.flags.CF=0; cpu.flags.OF=0;
           setZS(w,res);
           writeOperand(a0,res);
@@ -1154,33 +1116,22 @@
           break;
         }
 
-        case "CMP":{
-          if(inst.args.length !== 2) throw new Error("CMP needs 2 operands");
-          const w = a0.size ?? (a0.type==="reg8"?8:16);
-          const left = evalOperand(a0);
-          const right = evalOperand(a1);
-          subN(w,left,right); // flags only
-          cpu.regs.IP = nextIP; cpu.cycles++;
-          break;
-        }
-
-        // Jumps
         case "JMP":{
           if(inst.args.length !== 1) throw new Error("JMP needs 1 operand");
           cpu.regs.IP = clamp16(evalOperand(a0));
           cpu.cycles++;
           break;
         }
-        case "JZ":
-        case "JE":{
-          if(inst.args.length !== 1) throw new Error(op+" needs 1 operand");
+
+        case "JZ":{
+          if(inst.args.length !== 1) throw new Error("JZ needs 1 operand");
           cpu.regs.IP = cpu.flags.ZF ? clamp16(evalOperand(a0)) : nextIP;
           cpu.cycles++;
           break;
         }
-        case "JNZ":
-        case "JNE":{
-          if(inst.args.length !== 1) throw new Error(op+" needs 1 operand");
+
+        case "JNZ":{
+          if(inst.args.length !== 1) throw new Error("JNZ needs 1 operand");
           cpu.regs.IP = !cpu.flags.ZF ? clamp16(evalOperand(a0)) : nextIP;
           cpu.cycles++;
           break;
@@ -1188,7 +1139,6 @@
 
         case "LOOP":{
           if(inst.args.length !== 1) throw new Error("LOOP needs 1 operand");
-          // CX = CX - 1; if CX != 0 => jump
           setReg16("CX", (getReg16("CX") - 1) & 0xFFFF);
           cpu.regs.IP = (getReg16("CX") !== 0) ? clamp16(evalOperand(a0)) : nextIP;
           cpu.cycles++;
@@ -1306,7 +1256,7 @@
   }
   document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => activateTab(t.dataset.tab)));
 
-  // ---- Buttons / Events ----
+  // Buttons
   el("assembleBtn").addEventListener("click", () => {
     if(assemble()){
       resetCPU(true);
@@ -1339,7 +1289,6 @@
   });
 
   baseSel.addEventListener("change", () => { updateUI(); refreshMemory(); });
-
   el("memRefresh").addEventListener("click", refreshMemory);
 
   el("exampleSel").addEventListener("change", (e) => {
@@ -1348,47 +1297,28 @@
 
     const EX = {
       case: `ORG 100h
-        MOV SI, OFFSET STR
-        MOV CX, 2
+MOV SI, OFFSET STR
+MOV CX, 2
 
-L:      MOV AL, BYTE PTR [SI]
-        MOV AH, AL
-        AND AH, 20h
-        TEST AH, 20h
-        JZ  C1
-        JNZ C2
+L:  MOV AL, BYTE PTR [SI]
+    XOR AL, 20h
+    MOV BYTE PTR [SI], AL
+    INC SI
+    LOOP L
+HLT
 
-C1:
-        ADD AL, 20h
-        JMP OUT
-C2:
-        SUB AL, 20h
-        JMP OUT
-
-OUT:
-        MOV BYTE PTR [SI], AL
-        INC SI
-        LOOP L
-        HLT
-
-STR:    DB "ab"
+STR: DB "ab"
 `,
       data: `ORG 200h
-; Data demo:
-W1:     DW 1234h
-D1:     DD 89ABCDEFh
-S1:     DB "Hi", 0
+W1: DW 1234h
+S1: DB "Hi", 0
 
-; Read/write with PTR sizes:
-        MOV SI, OFFSET W1
-        MOV AX, WORD PTR [SI]     ; AX = 1234h
-        ADD AX, 1
-        MOV WORD PTR [SI], AX     ; W1 becomes 1235h
-
-        MOV SI, OFFSET D1
-        ; Default is BYTE PTR, so specify DWORD:
-        MOV AX, DWORD PTR [SI]    ; (for demo) reads low 16 bits into AX via size mismatch? better keep same width ops in your code
-        HLT
+MOV SI, OFFSET W1
+; read/write word
+MOV AX, WORD PTR [SI]
+ADD AX, 1
+MOV WORD PTR [SI], AX
+HLT
 `
     };
 
@@ -1407,18 +1337,16 @@ S1:     DB "Hi", 0
     if(e.ctrlKey && (e.key === "r" || e.key === "R")){ e.preventDefault(); el("resetBtn").click(); }
   });
 
-  // ---- Boot ----
   function boot(){
     const saved = localStorage.getItem(LS_CODE);
     codeEl.value = saved ?? `; Paste your MASM/TASM-like code here
-; Try the example: Toggle Case (your style)
+; Example: Toggle Case
 
 ORG 100h
 MOV SI, OFFSET STR
 MOV CX, 2
 
 L:  MOV AL, BYTE PTR [SI]
-    ; toggle bit5 using XOR (simple demo)
     XOR AL, 20h
     MOV BYTE PTR [SI], AL
     INC SI
@@ -1433,7 +1361,7 @@ STR: DB "ab"
     refreshMemory();
     setStatus("Idle","idle");
     clearOutput();
-    logLine("Tip: Assemble first to validate OFFSET/DB/DW/DD and labels.", "ok");
+    logLine("Tip: Assemble first to validate OFFSET/DB/DW and labels.", "ok");
   }
 
   boot();
