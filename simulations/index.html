@@ -142,11 +142,12 @@
 
     /* ✅ changed: auto-fit so 3 cards look great */
     .grid{
-      margin-top: 18px;
-      display:grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 16px;
-    }
+  margin-top: 18px;
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
 
     .card{
       background: rgba(255,255,255,.80);
@@ -269,6 +270,8 @@
       *{animation:none !important; transition:none !important}
       .reveal{opacity:1; transform:none}
     }
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+
   </style>
 </head>
 
@@ -351,7 +354,7 @@
         <article class="card reveal">
           <div class="cardTop">
             <div class="icon">🧩</div>
-            <div class="badge">Assembler</div>
+            <div class="badge">Assembly</div>
           </div>
 
           <h3>Assembler Simulator</h3>
@@ -359,12 +362,70 @@
 
           <div class="meta">
             <span class="tag">emu8086</span>
-            <span class="tag">MOV</span>
-            <span class="tag">LOOP</span>
+            <span class="tag">ORG 100h</span>
+            <span class="tag">DB / OFFSET</span>
           </div>
 
           <button class="openBtn" type="button" onclick="location.href='assembler/'">Open ↗</button>
         </article>
+
+
+        <!-- Signals & Systems (Convolution) -->
+<article class="card reveal">
+          <div class="cardTop">
+    <div class="icon">📈</div>
+    <div class="badge">Signals & Systems</div>
+  </div>
+
+  <h3>Convolution Simulator</h3>
+  <p class="desc">
+    Continuous & discrete convolution
+  </p>
+
+  <div class="meta">
+    <span class="tag">x(t)</span>
+    <span class="tag">y(t)</span>
+    <span class="tag">∗ Convolution</span>
+  </div>
+
+  <button
+    class="openBtn"
+    type="button"
+    onclick="location.href='signals-convolution/'">
+    Open ↗
+  </button>
+</article>
+
+
+
+        <!-- communications -->
+<article class="card reveal">
+  <div class="cardTop">
+    <div class="icon">📶</div>
+    <div class="badge">Communications & Data Transmition</div>
+  </div>
+
+  <h3>Digital Transmition</h3>
+  <p class="desc">
+    Line coding
+  </p>
+
+  <div class="meta">
+    <span class="tag">unipolar</span>
+    <span class="tag">polar</span>
+    <span class="tag">bipolar</span>
+  </div>
+
+  <button
+    class="openBtn"
+    type="button"
+    onclick="location.href='communications/'">
+    Open ↗
+  </button>
+</article>
+          
+
+
       </div>
     </div>
   </main>
