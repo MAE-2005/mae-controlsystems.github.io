@@ -4,11 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>MAE Academy — Process Control</title>
-  
+
   <link rel="icon" href="assets/mae.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+
+  <!-- Chart.js (like Code #1) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     :root{
@@ -40,7 +43,6 @@
     a{color:inherit;text-decoration:none}
     .container{width:min(1200px,92%);margin-inline:auto}
 
-    /* Header (same family style) */
     header{
       position:sticky; top:0; z-index:50;
       background: rgba(234,242,255,.85);
@@ -96,7 +98,6 @@
       color:#06101a;
     }
 
-    /* Page */
     main{padding: 46px 0 70px}
 
     .headRow{
@@ -131,7 +132,6 @@
       max-width: 72ch;
     }
 
-    /* Main simulator card */
     .simContainer{
       background: rgba(255,255,255,.80);
       border: 1px solid rgba(9,16,42,.12);
@@ -192,9 +192,15 @@
       color: var(--muted);
     }
 
-    canvas{
+    /* Chart canvases */
+    .chartWrap{
+      position:relative;
+      height:360px; /* IMPORTANT for responsive Chart.js */
       width:100%;
-      height:360px;
+    }
+    canvas{
+      width:100% !important;
+      height:100% !important;
       display:block;
       border-radius: 16px;
       background: #fff;
@@ -209,7 +215,6 @@
       font-weight: 700;
     }
 
-    /* Warning overlay */
     .warningOverlay{
       position:absolute;
       inset: 12px;
@@ -235,7 +240,6 @@
       80%{transform:translateX(4px)}
     }
 
-    /* Controls */
     .controlsArea{
       display:grid;
       grid-template-columns: 1fr 1fr 1fr;
@@ -368,7 +372,6 @@
       border: 1px solid rgba(63,111,255,.18);
     }
 
-    /* Reveal */
     .reveal{
       opacity:0;
       transform: translateY(14px) scale(.99);
@@ -433,7 +436,10 @@
             </div>
 
             <div style="position:relative">
-              <canvas id="simCanvas" width="600" height="360"></canvas>
+              <div class="chartWrap">
+                <canvas id="simCanvas"></canvas>
+              </div>
+
               <div id="sim-warning" class="warningOverlay">
                 <div style="font-size:40px; margin-bottom:8px;">⚠️</div>
                 <div style="font-size:20px;">Unstable!</div>
@@ -449,7 +455,11 @@
               <span>Root Locus (Poles)</span>
               <span class="small">Closed-loop poles</span>
             </div>
-            <canvas id="sPlaneCanvas" width="300" height="360"></canvas>
+
+            <div class="chartWrap">
+              <canvas id="sPlaneCanvas"></canvas>
+            </div>
+
             <div class="hint">Poles are marked as red ✕ on the s-plane.</div>
           </div>
         </div>
@@ -558,33 +568,37 @@
     // =========================
     // Core Globals
     // =========================
-    let canvas, ctx, sCanvas, sCtx;
+    let simChart = null;
+    let sPlaneChart = null;
 
     let sys = { order: 2, tau: 1.0, wn: 5.0, zeta: 0.5, p3: 10.0 };
     let pid = { sp: 50, kp: 5.0, ki: 1.0, kd: 2.0 };
     let design = { wn: 6.0, zeta: 0.7 };
 
     let state = { pv: 0, vel: 0, acc: 0, integ: 0, lastErr: 0 };
-    let history = [];
 
     const MAX_HISTORY = 600;
     const DT_FRAME = 0.02;
-    const Y_MIN = -20;
-    const Y_MAX = 140;
+
+    // store time-series like Code #1
+    let tSeries = [];
+    let spSeries = [];
+    let pvSeries = [];
+    let simTime = 0;
 
     let controlMode = 'manual';
     let lastStable = true;
 
+    // Chart update throttling
+    let lastChartUpdate = 0;
+    const CHART_UPDATE_MS = 80; // smooth + efficient
+
     init();
 
     function init() {
-      canvas = document.getElementById('simCanvas');
-      ctx = canvas.getContext('2d');
-
-      sCanvas = document.getElementById('sPlaneCanvas');
-      sCtx = sCanvas.getContext('2d');
-
-      canvas.addEventListener('wheel', (e) => {
+      // wheel on Time chart = adjust SP
+      const simCanvas = document.getElementById('simCanvas');
+      simCanvas.addEventListener('wheel', (e) => {
         e.preventDefault();
         const step = e.ctrlKey ? 0.2 : (e.shiftKey ? 5 : 1);
         pid.sp += (e.deltaY < 0 ? step : -step);
@@ -592,6 +606,7 @@
       }, { passive: false });
 
       bindInputs();
+      makeCharts();
       updateUI();
 
       // Reveal
@@ -607,6 +622,154 @@
       revealEls.forEach(el => io.observe(el));
 
       requestAnimationFrame(loop);
+    }
+
+    // =========================
+    // Chart.js setup (like Code #1)
+    // =========================
+    function makeCharts() {
+      // 1) Time response chart
+      const simCtx = document.getElementById('simCanvas').getContext('2d');
+      simChart = new Chart(simCtx, {
+        type: 'line',
+        data: {
+          labels: tSeries, // time in seconds
+          datasets: [
+            {
+              label: 'Setpoint (SP)',
+              data: spSeries,
+              borderWidth: 2,
+              pointRadius: 0,
+              borderDash: [6, 6],
+              tension: 0.05
+            },
+            {
+              label: 'Process Variable (PV)',
+              data: pvSeries,
+              borderWidth: 3,
+              pointRadius: 0,
+              tension: 0.1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: true },
+            tooltip: { enabled: true }
+          },
+          scales: {
+            x: {
+              title: { display: true, text: 'Time (s)' },
+              ticks: { maxTicksLimit: 10 }
+            },
+            y: {
+              title: { display: true, text: 'Value' },
+              suggestedMin: -20,
+              suggestedMax: 140
+            }
+          }
+        }
+      });
+
+      // 2) S-plane scatter chart
+      const sCtx = document.getElementById('sPlaneCanvas').getContext('2d');
+      sPlaneChart = new Chart(sCtx, {
+        type: 'scatter',
+        data: {
+          datasets: [
+            {
+              label: 'Poles',
+              data: [],
+              pointRadius: 6,
+              pointHoverRadius: 7
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const x = ctx.raw.x ?? 0;
+                  const y = ctx.raw.y ?? 0;
+                  return `s = ${x.toFixed(2)} ${y >= 0 ? '+' : '-'} j${Math.abs(y).toFixed(2)}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              title: { display: true, text: 'Re(s)' },
+              grid: { drawBorder: true },
+              suggestedMin: -20,
+              suggestedMax: 10
+            },
+            y: {
+              title: { display: true, text: 'Im(s)' },
+              suggestedMin: -15,
+              suggestedMax: 15
+            }
+          }
+        }
+      });
+    }
+
+    function pushHistory(sp, pv) {
+      simTime += DT_FRAME;
+
+      tSeries.push(simTime.toFixed(2));
+      spSeries.push(sp);
+      pvSeries.push(pv);
+
+      if (tSeries.length > MAX_HISTORY) {
+        tSeries.shift();
+        spSeries.shift();
+        pvSeries.shift();
+      }
+    }
+
+    function updateChartsMaybe() {
+      const now = performance.now();
+      if (now - lastChartUpdate < CHART_UPDATE_MS) return;
+      lastChartUpdate = now;
+
+      // update time chart
+      simChart.update('none');
+    }
+
+    function updateSPlaneChart(roots) {
+      // map roots -> scatter points (x=re, y=im)
+      const pts = roots.map(r => ({ x: r.re, y: r.im }));
+
+      // make points look like red "X" visually: use rotated square (close enough) via pointStyle
+      sPlaneChart.data.datasets[0].data = pts;
+      sPlaneChart.data.datasets[0].pointStyle = 'crossRot';
+      sPlaneChart.data.datasets[0].borderColor = '#d32f2f';
+      sPlaneChart.data.datasets[0].backgroundColor = '#d32f2f';
+
+      // auto-range a bit
+      const reVals = pts.map(p => p.x);
+      const imVals = pts.map(p => p.y);
+      if (reVals.length) {
+        const minX = Math.min(...reVals) - 2;
+        const maxX = Math.max(...reVals) + 2;
+        const maxAbsY = Math.max(2, ...imVals.map(v => Math.abs(v))) + 2;
+
+        sPlaneChart.options.scales.x.suggestedMin = Math.min(-20, minX);
+        sPlaneChart.options.scales.x.suggestedMax = Math.max(10, maxX);
+        sPlaneChart.options.scales.y.suggestedMin = -maxAbsY;
+        sPlaneChart.options.scales.y.suggestedMax = maxAbsY;
+      }
+
+      sPlaneChart.update('none');
     }
 
     // =========================
@@ -695,8 +858,22 @@
 
     function resetSim() {
       state = { pv: 0, vel: 0, acc: 0, integ: 0, lastErr: 0 };
-      history = [];
+
+      // reset series
+      tSeries.length = 0;
+      spSeries.length = 0;
+      pvSeries.length = 0;
+      simTime = 0;
+
+      // seed with zeros so chart is not empty
+      for (let i = 0; i < 10; i++) {
+        tSeries.push((i * DT_FRAME).toFixed(2));
+        spSeries.push(pid.sp);
+        pvSeries.push(0);
+      }
+
       document.getElementById('sim-warning').style.display = 'none';
+      simChart.update('none');
     }
 
     function triggerStep() {
@@ -748,8 +925,9 @@
         }
       }
 
-      history.push({ sp: pid.sp, pv: state.pv });
-      if (history.length > MAX_HISTORY) history.shift();
+      // push one sample per frame (like scope trace)
+      pushHistory(pid.sp, state.pv);
+      updateChartsMaybe();
     }
 
     function handleCrash() {
@@ -811,7 +989,7 @@
         lastStable = stable;
       }
 
-      drawSPlane(roots);
+      updateSPlaneChart(roots);
     }
 
     function solveQuad(a, b, c) {
@@ -853,160 +1031,11 @@
     }
 
     // =========================
-    // Draw Loop
+    // Loop (no manual drawing now)
     // =========================
     function loop() {
       updatePhysics();
-      drawGraph();
       requestAnimationFrame(loop);
-    }
-
-    // =========================
-    // Time graph
-    // =========================
-    function drawGraph() {
-      ctx.clearRect(0, 0, 600, 360);
-
-      const W = 600, H = 360;
-      const LEFT_PAD = 46;
-      const RIGHT_PAD = 10;
-      const TOP_PAD = 14;
-      const BOTTOM_PAD = 30;
-
-      const plotX0 = LEFT_PAD;
-      const plotY0 = TOP_PAD;
-      const plotW = W - LEFT_PAD - RIGHT_PAD;
-      const plotH = H - TOP_PAD - BOTTOM_PAD;
-
-      const yToPix = (yVal) => {
-        const t = (yVal - Y_MIN) / (Y_MAX - Y_MIN);
-        return plotY0 + plotH - t * plotH;
-      };
-
-      const xToPix = (i) => plotX0 + (i / (MAX_HISTORY - 1)) * plotW;
-
-      // Grid Y + labels
-      ctx.strokeStyle = "rgba(9,16,42,.10)";
-      ctx.fillStyle = "rgba(9,16,42,.55)";
-      ctx.font = "10px system-ui";
-
-      [0, 25, 50, 75, 100, 125].forEach(v => {
-        const y = yToPix(v);
-        ctx.beginPath();
-        ctx.moveTo(plotX0, y);
-        ctx.lineTo(plotX0 + plotW, y);
-        ctx.stroke();
-        ctx.fillText(String(v), 10, y + 3);
-      });
-
-      // Axes
-      ctx.strokeStyle = "rgba(9,16,42,.20)";
-      ctx.lineWidth = 1.5;
-
-      ctx.beginPath();
-      ctx.moveTo(plotX0, plotY0);
-      ctx.lineTo(plotX0, plotY0 + plotH);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(plotX0, plotY0 + plotH);
-      ctx.lineTo(plotX0 + plotW, plotY0 + plotH);
-      ctx.stroke();
-
-      // Time axis ticks (seconds)
-      const totalTime = (MAX_HISTORY - 1) * DT_FRAME;
-      const tickEvery = 2;
-
-      ctx.fillStyle = "rgba(9,16,42,.55)";
-      ctx.strokeStyle = "rgba(9,16,42,.12)";
-      ctx.lineWidth = 1;
-
-      for (let t = 0; t <= totalTime + 1e-9; t += tickEvery) {
-        const i = t / DT_FRAME;
-        const x = plotX0 + (i / (MAX_HISTORY - 1)) * plotW;
-
-        ctx.beginPath();
-        ctx.moveTo(x, plotY0 + plotH);
-        ctx.lineTo(x, plotY0 + plotH + 6);
-        ctx.stroke();
-
-        ctx.fillText(`${t}s`, x - 10, plotY0 + plotH + 20);
-      }
-
-      // SP label
-      ctx.fillStyle = "rgba(9,16,42,.92)";
-      ctx.font = "12px system-ui";
-      ctx.fillText(`SP: ${pid.sp.toFixed(1)} (scroll to adjust)`, plotX0, 12);
-
-      if (history.length < 2) return;
-
-      // SP dashed
-      ctx.beginPath();
-      ctx.strokeStyle = "rgba(9,16,42,.35)";
-      ctx.setLineDash([6, 6]);
-      ctx.lineWidth = 2;
-
-      history.forEach((h, i) => {
-        const x = xToPix(i);
-        const y = yToPix(h.sp);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.stroke();
-
-      // PV solid (blue)
-      ctx.beginPath();
-      ctx.strokeStyle = "#3f6fff";
-      ctx.setLineDash([]);
-      ctx.lineWidth = 3;
-
-      history.forEach((h, i) => {
-        const x = xToPix(i);
-        let y = yToPix(h.pv);
-        y = Math.max(plotY0 - 200, Math.min(plotY0 + plotH + 200, y));
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.stroke();
-    }
-
-    // =========================
-    // S-plane drawing
-    // =========================
-    function drawSPlane(roots) {
-      sCtx.clearRect(0, 0, 300, 360);
-
-      const w = 300, h = 360;
-      const cx = w / 2, cy = h / 2;
-      const sc = 10;
-
-      // axes
-      sCtx.strokeStyle = "rgba(9,16,42,.22)";
-      sCtx.lineWidth = 1.5;
-      sCtx.beginPath();
-      sCtx.moveTo(cx, 0);
-      sCtx.lineTo(cx, h);
-      sCtx.moveTo(0, cy);
-      sCtx.lineTo(w, cy);
-      sCtx.stroke();
-
-      // poles
-      roots.forEach(r => {
-        const x = cx + r.re * sc;
-        const y = cy - r.im * sc;
-
-        if (x > -50 && x < w + 50 && y > -50 && y < h + 50) {
-          sCtx.strokeStyle = "#d32f2f";
-          sCtx.lineWidth = 2.2;
-
-          sCtx.beginPath();
-          sCtx.moveTo(x - 6, y - 6);
-          sCtx.lineTo(x + 6, y + 6);
-          sCtx.moveTo(x + 6, y - 6);
-          sCtx.lineTo(x - 6, y + 6);
-          sCtx.stroke();
-        }
-      });
     }
   </script>
 </body>
