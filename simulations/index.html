@@ -6,10 +6,12 @@
   <title>MAE Academy — Simulations</title>
   <meta name="description" content="MAE Academy simulations hub: Control Systems, Power Electronics, and Assembler." />
 
-   <link rel="icon" href="assets/logo.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+
+  <!-- Favicon (SVG) -->
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
 
   <style>
     :root{
@@ -141,14 +143,13 @@
       max-width: 70ch;
     }
 
-    /* ✅ changed: auto-fit so 3 cards look great */
+    /* ✅ fixed: removed stray line + made responsive */
     .grid{
-  margin-top: 18px;
-  display:grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
-
+      margin-top: 18px;
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
 
     .card{
       background: rgba(255,255,255,.80);
@@ -271,8 +272,6 @@
       *{animation:none !important; transition:none !important}
       .reveal{opacity:1; transform:none}
     }
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-
   </style>
 </head>
 
@@ -281,7 +280,6 @@
     <div class="container nav">
       <a class="brand" href="../" aria-label="Back to Home">
         <div class="logoMark" aria-hidden="true"></div>
-        
         <div>
           <h1>MAE Academy</h1>
           <p>Simulations Hub</p>
@@ -351,7 +349,7 @@
           <button class="openBtn" type="button" onclick="location.href='power-electronics/'">Open ↗</button>
         </article>
 
-        <!-- ✅ NEW: Assembler -->
+        <!-- Assembler -->
         <article class="card reveal">
           <div class="cardTop">
             <div class="icon">🧩</div>
@@ -370,86 +368,62 @@
           <button class="openBtn" type="button" onclick="location.href='assembler/'">Open ↗</button>
         </article>
 
-
         <!-- Signals & Systems (Convolution) -->
-<article class="card reveal">
+        <article class="card reveal">
           <div class="cardTop">
-    <div class="icon">📈</div>
-    <div class="badge">Signals & Systems</div>
-  </div>
+            <div class="icon">📈</div>
+            <div class="badge">Signals & Systems</div>
+          </div>
 
-  <h3>Convolution Simulator</h3>
-  <p class="desc">
-    Continuous & discrete convolution
-  </p>
+          <h3>Convolution Simulator</h3>
+          <p class="desc">Continuous & discrete convolution</p>
 
-  <div class="meta">
-    <span class="tag">x(t)</span>
-    <span class="tag">y(t)</span>
-    <span class="tag">∗ Convolution</span>
-  </div>
+          <div class="meta">
+            <span class="tag">x(t)</span>
+            <span class="tag">y(t)</span>
+            <span class="tag">∗ Convolution</span>
+          </div>
 
-  <button
-    class="openBtn"
-    type="button"
-    onclick="location.href='signals-convolution/'">
-    Open ↗
-  </button>
-</article>
+          <button class="openBtn" type="button" onclick="location.href='signals-convolution/'">Open ↗</button>
+        </article>
 
+        <!-- Communications -->
+        <article class="card reveal">
+          <div class="cardTop">
+            <div class="icon">📶</div>
+            <div class="badge">Communications</div>
+          </div>
 
+          <h3>Digital Transmission</h3>
+          <p class="desc">Line coding</p>
 
-        <!-- communications -->
-<article class="card reveal">
-  <div class="cardTop">
-    <div class="icon">📶</div>
-    <div class="badge">Communications</div>
-  </div>
+          <div class="meta">
+            <span class="tag">unipolar</span>
+            <span class="tag">polar</span>
+            <span class="tag">bipolar</span>
+          </div>
 
-  <h3>Digital Transmition</h3>
-  <p class="desc">
-    Line coding
-  </p>
+          <button class="openBtn" type="button" onclick="location.href='communications/'">Open ↗</button>
+        </article>
 
-  <div class="meta">
-    <span class="tag">unipolar</span>
-    <span class="tag">polar</span>
-    <span class="tag">bipolar</span>
-  </div>
+        <!-- Logic -->
+        <article class="card reveal">
+          <div class="cardTop">
+            <div class="icon">🧮</div>
+            <div class="badge">Logic Design</div>
+          </div>
 
-  <button
-    class="openBtn"
-    type="button"
-    onclick="location.href='communications/'">
-    Open ↗
-  </button>
-</article>
-          
-<!-- Logic -->
-<article class="card reveal">
-  <div class="cardTop">
-    <div class="icon">🧮</div>
-    <div class="badge">Logic Design</div>
-  </div>
+          <h3>Logic Design</h3>
+          <p class="desc">Truth tables, decoders, encoders, mux/demux with interactive checks.</p>
 
-  <h3>Logic Design</h3>
-  <p class="desc">
-    Truth tables, decoders, encoders, mux/demux with interactive checks.
-  </p>
+          <div class="meta">
+            <span class="tag">Logic Gates</span>
+            <span class="tag">Conversions</span>
+            <span class="tag">01</span>
+          </div>
 
-  <div class="meta">
-    <span class="tag">Logic Gates</span>
-    <span class="tag">Conversions</span>
-    <span class="tag">01</span>
-  </div>
-
-  <button
-    class="openBtn"
-    type="button"
-    onclick="location.href='logic/'">
-    Open ↗
-  </button>
-</article>
+          <button class="openBtn" type="button" onclick="location.href='logic/'">Open ↗</button>
+        </article>
 
       </div>
     </div>
@@ -465,18 +439,18 @@
     </div>
   </footer>
 
-
+  <script>
     const revealEls = document.querySelectorAll(".reveal");
     const io = new IntersectionObserver((entries) => {
-      for(const e of entries){
-        if(e.isIntersecting){
+      for (const e of entries) {
+        if (e.isIntersecting) {
           e.target.classList.add("isVisible");
           io.unobserve(e.target);
         }
       }
-    }, {threshold: 0.12});
-    revealEls.forEach(el => io.observe(el));
+    }, { threshold: 0.12 });
 
+    revealEls.forEach(el => io.observe(el));
     document.getElementById("year").textContent = new Date().getFullYear();
   </script>
 </body>
