@@ -65,6 +65,17 @@
       position:relative;
       box-shadow: 0 14px 30px rgba(63,111,255,.18);
       overflow:hidden;
+      display:grid;
+      place-items:center;
+    }
+
+    .logoSvg{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      filter: brightness(0) invert(1); /* makes svg white */
+      position:relative;
+      z-index:2; /* فوق shimmer */
     }
     .logoMark::after{
       content:""; position:absolute; inset:-60%;
@@ -265,7 +276,9 @@
   <header>
     <div class="container nav">
       <a class="brand" href="../" aria-label="Back to Home">
-        <div class="logoMark" aria-hidden="true"></div>
+        <div class="logoMark" aria-hidden="true">
+          <img class="logoSvg" src="../assets/mae.svg" alt="">
+        </div>
         <div>
           <h1>MAE Academy</h1>
           <p>Simulations Hub</p>
