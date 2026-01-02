@@ -216,7 +216,6 @@
       background: #fff;
       border: 1px solid rgba(9,16,42,.10);
     }
-    #sPlaneCanvas{background: rgba(9,16,42,.02)}
 
     .hint{
       margin-top: 8px;
@@ -665,14 +664,16 @@
               borderWidth: 2,
               pointRadius: 0,
               borderDash: [6, 6],
-              tension: 0.05
+              tension: 0.05,
+              borderColor: '#08b58d'
             },
             {
               label: 'Process Variable (PV)',
               data: pvSeries,
               borderWidth: 3,
               pointRadius: 0,
-              tension: 0.1
+              tension: 0.1,
+              borderColor: '#3f6fff'
             }
           ]
         },
