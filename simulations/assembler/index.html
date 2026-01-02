@@ -2,16 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>MAE Academy — Assembler</title>
 
-  <!-- Fonts -->
+  <link rel="icon" href="assets/mae.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
 
   <style>
     :root{
+      /* SAME AS CODE 1 */
       --bg:#eaf2ff;
       --bg2:#f8fbff;
       --card:#ffffff;
@@ -23,6 +24,15 @@
       --border: rgba(9,16,42,.14);
       --shadow: 0 22px 60px rgba(16,24,40,.12);
       --radius: 22px;
+
+      /* SAME PAGE WIDTH (W) */
+      --W: 1200px;
+
+      /* extra */
+      --good:#16a34a;
+      --bad:#e11d48;
+      --panel2:#f3f6ff;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     }
 
     *{box-sizing:border-box}
@@ -38,8 +48,9 @@
       overflow-x:hidden;
     }
     a{color:inherit;text-decoration:none}
-    .container{width:min(1200px,92%);margin-inline:auto}
+    .container{width:min(var(--W),92%);margin-inline:auto}
 
+    /* ===== HEADER (SAME AS CODE 1) ===== */
     header{
       position:sticky; top:0; z-index:50;
       background: rgba(234,242,255,.85);
@@ -84,6 +95,7 @@
     .brand h1{margin:0;font-size:15px;line-height:1.2}
     .brand p{margin:0;font-size:12px;color:var(--muted)}
 
+    /* ===== BUTTONS (SAME AS CODE 1) ===== */
     .actions{display:flex; gap:10px; align-items:center}
     .btn{
       border: 1px solid var(--border);
@@ -97,16 +109,54 @@
       display:inline-flex; align-items:center; gap:8px;
       user-select:none;
       white-space:nowrap;
+      font-family:"Inter",system-ui,sans-serif;
     }
     .btn:hover{transform: translateY(-1px); box-shadow: var(--shadow)}
+    .btn:active{transform: translateY(0px)}
     .btn.primary{
       border: none;
       background: linear-gradient(135deg, rgba(8,181,141,.95), rgba(63,111,255,.90));
       color:#06101a;
     }
+    /* optional variants but still same "btn" shape */
+    .btn.good{
+      border:none;
+      background: linear-gradient(135deg, rgba(22,163,74,.95), rgba(8,181,141,.75));
+      color:#06101a;
+    }
+    .btn.bad{
+      border:none;
+      background: linear-gradient(135deg, rgba(225,29,72,.95), rgba(211,47,47,.75));
+      color:#fff;
+    }
+    .btn.ghost{
+      background: transparent;
+      box-shadow:none;
+    }
+    .btn.ghost:hover{box-shadow: var(--shadow)}
+
+    /* inputs/selects match rounded style */
+    select, input, textarea{
+      font-family:"Inter",system-ui,sans-serif;
+    }
+    select, input{
+      width:auto;
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(9,16,42,.16);
+      font-weight: 900;
+      background: rgba(255,255,255,.9);
+      transition: box-shadow .12s ease, transform .12s ease, border-color .12s ease;
+    }
+    select:focus, input:focus{
+      outline:none;
+      box-shadow: 0 0 0 6px rgba(63,111,255,.12);
+      border-color: rgba(63,111,255,.35);
+    }
 
     main{padding: 44px 0 70px}
 
+    /* ===== TOP TITLE ROW (SAME IDEA AS CODE 1 headRow) ===== */
     .headRow{
       display:flex;
       justify-content:space-between;
@@ -115,61 +165,79 @@
       flex-wrap:wrap;
       margin-bottom: 16px;
     }
-    .titleWrap{display:flex; align-items:center; gap:12px}
-    .simIcon{
-      width:46px;height:46px;border-radius:16px;
-      border:1px solid rgba(9,16,42,.12);
-      background: rgba(255,255,255,.72);
-      display:grid; place-items:center;
-      box-shadow: 0 10px 20px rgba(16,24,40,.08);
-      overflow:hidden;
-      font-size:22px;
+    h2{
+      margin:0;
+      font-size: 44px;
+      letter-spacing:-1px;
+      line-height:1.05;
     }
+    .sub{
+      margin:8px 0 0;
+      color:var(--muted);
+      font-weight: 650;
+      line-height:1.8;
+      max-width: 72ch;
+    }
+
+    /* ===== SAME "CARD CONTAINER" FEEL AS CODE 1 ===== */
+    .simContainer{
+      background: rgba(255,255,255,.80);
+      border: 1px solid rgba(9,16,42,.12);
+      border-radius: calc(var(--radius) + 2px);
+      box-shadow: 0 12px 30px rgba(16,24,40,.08);
+      padding: 16px;
+      position:relative;
+      overflow:hidden;
+    }
+    .simContainer::before{
+      content:"";
+      position:absolute; inset:-2px;
+      background:
+        radial-gradient(520px 220px at 70% 10%, rgba(8,181,141,.14), transparent 60%),
+        radial-gradient(520px 240px at 20% 70%, rgba(63,111,255,.14), transparent 60%);
+      opacity:.8;
+      z-index:0;
+    }
+    .simContainer > *{position:relative; z-index:1}
+
+    /* ===== ASSEMBLER LAYOUT ===== */
     .app{
-      max-width:1500px;
-      margin:0 auto;
       display:grid;
       grid-template-columns: 1.25fr .9fr;
       gap:16px;
+      width:100%;              /* IMPORTANT: do NOT set max-width here */
+    }
+    @media (max-width: 1100px){
+      .app{ grid-template-columns:1fr; }
+      .editorWrap{ height:350px; }
     }
 
-    .page-header{
-      grid-column:1/-1;
+    /* Panels match Code 1 panel feel */
+    .panel{
+      border: 1px solid rgba(9,16,42,.12);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.85);
+      padding: 12px;
+      box-shadow: 0 10px 20px rgba(16,24,40,.06);
+      position:relative;
+      overflow:hidden;
+      transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+    .panel:hover{
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+      border-color: rgba(63,111,255,.22);
+    }
+    .panel .hd{
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:12px;
-      padding:12px 14px;
-      border:1px solid var(--border);
-      border-radius:14px;
-      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.78));
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(10px);
+      gap:10px;
+      font-weight: 900;
+      margin-bottom: 10px;
+      font-size: 14px;
     }
-    .page-header .title{ display:flex; flex-direction:column; gap:2px; }
-    .page-header h1{ margin:0; font-size:16px; letter-spacing:.2px; }
-    .page-header .sub{ margin:0; font-size:12px; color:var(--muted); }
-
-    .toolbar{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:flex-end; }
-
-    button, select, input{
-      border:1px solid var(--border);
-      background: rgba(255,255,255,.85);
-      color:var(--text);
-      border-radius:10px;
-      padding:10px 12px;
-      font-weight:800;
-      cursor:pointer;
-      transition:.15s ease;
-      font-family:var(--sans);
-      box-shadow: 0 10px 18px rgba(15,23,42,.05);
-    }
-    button:hover, select:hover{ border-color: rgba(37,99,235,.45); transform: translateY(-1px); }
-    button:active{ transform: translateY(0px); opacity:.95; }
-    button.primary{ background: linear-gradient(180deg, rgba(37,99,235,.95), rgba(37,99,235,.75)); border-color: rgba(37,99,235,.35); color:#fff; }
-    button.good{ background: linear-gradient(180deg, rgba(22,163,74,.92), rgba(22,163,74,.72)); border-color: rgba(22,163,74,.35); color:#fff; }
-    button.bad{ background: linear-gradient(180deg, rgba(225,29,72,.92), rgba(225,29,72,.72)); border-color: rgba(225,29,72,.35); color:#fff; }
-    button.ghost{ background: transparent; box-shadow:none; }
+    .panel .bd{ }
 
     .pill{
       font-family:var(--mono);
@@ -177,52 +245,33 @@
       color:var(--muted);
       padding:8px 10px;
       border-radius:999px;
-      border:1px solid var(--border);
+      border:1px solid rgba(9,16,42,.12);
       background: rgba(255,255,255,.75);
       user-select:none;
-      box-shadow: 0 10px 18px rgba(15,23,42,.05);
     }
     .pill code{
       font-family:var(--mono);
-      background: rgba(37,99,235,.08);
+      background: rgba(63,111,255,.10);
       padding:2px 6px;
-      border-radius:8px;
-      border:1px solid rgba(37,99,235,.12);
-      color: rgba(15,23,42,.92);
+      border-radius:10px;
+      border:1px solid rgba(63,111,255,.14);
+      color: rgba(9,16,42,.92);
+      font-weight:900;
     }
 
-    .panel{
-      border:1px solid var(--border);
-      border-radius:14px;
-      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.78));
-      box-shadow: var(--shadow);
-      overflow:hidden;
-      backdrop-filter: blur(10px);
-    }
-    .panel .hd{
-      padding:12px 14px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      border-bottom:1px solid var(--border);
-      background: rgba(255,255,255,.72);
-    }
-    .panel .hd h2{ margin:0; font-size:13px; letter-spacing:.2px; }
-    .panel .bd{ padding:12px 14px; }
-
+    /* Editor */
     .editorWrap{
       display:grid;
       grid-template-columns: 52px 1fr;
       height: 400px;
       background: var(--panel2);
-      border-radius:12px;
-      border:1px solid var(--border);
+      border-radius: 16px;
+      border: 1px solid rgba(9,16,42,.12);
       overflow:hidden;
     }
     .gutter{
       background: rgba(255,255,255,.72);
-      border-right:1px solid var(--border);
+      border-right:1px solid rgba(9,16,42,.12);
       padding:10px 0;
       font-family:var(--mono);
       font-size:12px;
@@ -251,7 +300,7 @@
       background: rgba(225,29,72,.9);
       box-shadow: 0 0 0 2px rgba(225,29,72,.14);
     }
-    .line.active{ background: rgba(37,99,235,.12); color: rgba(15,23,42,.92); }
+    .line.active{ background: rgba(63,111,255,.14); color: rgba(15,23,42,.92); }
 
     textarea{
       width:100%;
@@ -273,6 +322,7 @@
       color:var(--muted);
       font-size:12px;
       line-height:1.55;
+      font-weight:700;
     }
 
     .rightGrid{
@@ -291,13 +341,12 @@
       align-items:center;
       justify-content:space-between;
       padding:10px 12px;
-      border:1px solid var(--border);
-      border-radius:12px;
+      border:1px solid rgba(9,16,42,.12);
+      border-radius:16px;
       background: rgba(255,255,255,.75);
       font-family:var(--mono);
       font-size:12px;
       gap:10px;
-      box-shadow: 0 10px 18px rgba(15,23,42,.05);
     }
     .kv .k{ color: rgba(81,96,122,.95); font-weight:800; }
     .kv .v{ font-weight:900; }
@@ -306,34 +355,32 @@
     .flag{
       padding:8px 10px;
       border-radius:999px;
-      border:1px solid var(--border);
+      border:1px solid rgba(9,16,42,.12);
       background: rgba(255,255,255,.75);
       font-family:var(--mono);
       font-size:12px;
       color: rgba(81,96,122,.95);
       user-select:none;
-      box-shadow: 0 10px 18px rgba(15,23,42,.05);
     }
     .flag.on{
       border-color: rgba(22,163,74,.35);
       background: rgba(22,163,74,.12);
       color: rgba(15,23,42,.95);
-      box-shadow: 0 0 0 2px rgba(22,163,74,.07), 0 10px 18px rgba(15,23,42,.05);
+      box-shadow: 0 0 0 2px rgba(22,163,74,.07);
     }
 
     .tabs{ display:flex; gap:8px; flex-wrap:wrap; }
     .tab{
       padding:8px 10px;
-      border-radius:10px;
-      border:1px solid var(--border);
+      border-radius:16px;
+      border:1px solid rgba(9,16,42,.12);
       background: rgba(255,255,255,.75);
       font-weight:900;
       font-size:12px;
       cursor:pointer;
       user-select:none;
-      box-shadow: 0 10px 18px rgba(15,23,42,.05);
     }
-    .tab.active{ border-color: rgba(37,99,235,.35); background: rgba(37,99,235,.10); }
+    .tab.active{ border-color: rgba(63,111,255,.35); background: rgba(63,111,255,.12); }
 
     .tabContent{ display:none; }
     .tabContent.active{ display:block; }
@@ -351,10 +398,14 @@
       font-weight:900;
       width:170px;
       background: rgba(255,255,255,.92);
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(9,16,42,.16);
     }
+
     .memDump{
-      border:1px solid var(--border);
-      border-radius:12px;
+      border:1px solid rgba(9,16,42,.12);
+      border-radius:16px;
       background: rgba(255,255,255,.75);
       padding:10px;
       overflow:auto;
@@ -367,8 +418,8 @@
     }
 
     .out{
-      border:1px solid var(--border);
-      border-radius:12px;
+      border:1px solid rgba(9,16,42,.12);
+      border-radius:16px;
       background: rgba(255,255,255,.75);
       padding:10px;
       overflow:auto;
@@ -380,19 +431,21 @@
       box-shadow: inset 0 1px 0 rgba(15,23,42,.04);
     }
     .out .err{ color: var(--bad); font-weight:900; }
-    .out .warn{ color: var(--warn); font-weight:900; }
+    .out .warn{ color: #b45309; font-weight:900; }
     .out .ok{ color: var(--good); font-weight:900; }
 
-    @media (max-width: 1100px){
-      .app{ grid-template-columns:1fr; }
-      .editorWrap{ height:350px; }
-      .topbar{ flex-wrap:wrap; }
-      .topActions{ justify-content:flex-start; }
+    /* small toolbar layout */
+    .toolbar{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+      justify-content:flex-end;
     }
   </style>
 </head>
-<body>
 
+<body>
   <header>
     <div class="container nav">
       <a class="brand" href="../../" aria-label="Home">
@@ -412,110 +465,121 @@
     </div>
   </header>
 
-  <div class="app">
-    <div class="page-header">
-      <div class="title">
-        <h1>16-bit Assembly Emulator (MASM-like Subset)</h1>
-        <p class="sub">Supports OFFSET, ORG, DB/DW/DD, strings, AL/AH.., TEST, LOOP, BYTE/WORD/DWORD PTR</p>
-      </div>
-      <div class="toolbar">
-        <button class="primary" id="runBtn" title="Ctrl+Enter">Run</button>
-        <button class="good" id="stepBtn" title="F10">Step</button>
-        <button class="bad" id="resetBtn" title="Ctrl+R">Reset</button>
-        <button class="ghost" id="assembleBtn">Assemble</button>
-
-        <select id="exampleSel" title="Load example">
-          <option value="">Load example…</option>
-          <option value="case">Toggle Case (your style)</option>
-          <option value="data">DB/DW/DD + PTR demo</option>
-        </select>
-
-        <select id="baseSel" title="Display base">
-          <option value="hex">HEX</option>
-          <option value="dec">DEC</option>
-        </select>
-
-        <span class="pill" id="statusPill">Idle</span>
-      </div>
-    </div>
-
-    <section class="panel">
-      <div class="hd">
-        <h2>Code Editor</h2>
-        <div class="pill">Comments: <code>;</code> • Click line numbers to toggle breakpoints</div>
-      </div>
-      <div class="bd">
-        <div class="editorWrap">
-          <div class="gutter" id="gutter"></div>
-          <textarea id="code" spellcheck="false"></textarea>
+  <main>
+    <div class="container">
+      <!-- SAME TOP BODY FEEL AS CODE 1 -->
+      <div class="headRow">
+        <div>
+          <h2>Assembler</h2>
+          <div class="sub">16-bit Assembly Emulator (MASM-like subset) • Supports OFFSET, ORG, DB/DW/DD, strings, AL/AH.., TEST, LOOP, BYTE/WORD/DWORD PTR</div>
         </div>
 
-        <div class="hint">
-          <b>Numbers:</b> <span class="pill"><code>123</code></span> <span class="pill"><code>0x7B</code></span> <span class="pill"><code>7Bh</code></span> &nbsp;•&nbsp;
-          <b>Data:</b> <span class="pill"><code>DB</code></span> <span class="pill"><code>DW</code></span> <span class="pill"><code>DD</code></span> (supports <code>"text"</code> and <code>'A'</code>) &nbsp;•&nbsp;
-          <b>Memory:</b> <span class="pill"><code>[SI]</code></span> <span class="pill"><code>[DI+2]</code></span> <span class="pill"><code>[0x200]</code></span> &nbsp;•&nbsp;
-          <b>Size:</b> <span class="pill"><code>BYTE PTR</code></span> <span class="pill"><code>WORD PTR</code></span> <span class="pill"><code>DWORD PTR</code></span> &nbsp;•&nbsp;
-          <b>Addr:</b> <span class="pill"><code>OFFSET label</code></span>
+        <div class="toolbar">
+          <button class="btn primary" id="runBtn" title="Ctrl+Enter" type="button">Run</button>
+          <button class="btn good" id="stepBtn" title="F10" type="button">Step</button>
+          <button class="btn bad" id="resetBtn" title="Ctrl+R" type="button">Reset</button>
+          <button class="btn" id="assembleBtn" type="button">Assemble</button>
+
+          <select id="exampleSel" title="Load example">
+            <option value="">Load example…</option>
+            <option value="case">Toggle Case (your style)</option>
+            <option value="data">DB/DW/DD + PTR demo</option>
+          </select>
+
+          <select id="baseSel" title="Display base">
+            <option value="hex">HEX</option>
+            <option value="dec">DEC</option>
+          </select>
+
+          <span class="pill" id="statusPill">Idle</span>
         </div>
       </div>
-    </section>
 
-    <div class="rightGrid">
-      <section class="panel">
-        <div class="hd">
-          <h2>CPU State</h2>
-          <div class="pill">Registers: 16-bit + 8-bit views</div>
-        </div>
-        <div class="bd">
-          <div class="grid2" id="regsGrid"></div>
-          <div style="height:10px"></div>
-          <div class="flags" id="flagsRow"></div>
-          <div style="height:10px"></div>
-          <div class="kv"><span class="k">Cycles</span><span class="v" id="cycles">0</span></div>
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="hd">
-          <h2>Inspector</h2>
-          <div class="tabs">
-            <div class="tab active" data-tab="memory">Memory</div>
-            <div class="tab" data-tab="output">Output</div>
-          </div>
-        </div>
-        <div class="bd">
-          <div class="tabContent active" id="tab-memory">
-            <div class="memBar">
-              <span class="pill">View from</span>
-              <input id="memStart" value="0x0100" />
-              <button id="memRefresh">Refresh</button>
-              <span class="pill">64KB RAM</span>
+      <div class="simContainer">
+        <div class="app">
+          <section class="panel">
+            <div class="hd">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:14px; font-weight:1000;">Code Editor</span>
+              </div>
+              <div class="pill">Comments: <code>;</code> • Click line numbers to toggle breakpoints</div>
             </div>
-            <div class="memDump" id="memDump"></div>
-          </div>
 
-          <div class="tabContent" id="tab-output">
-            <div class="out" id="out"></div>
-            <div class="hint">Assemble checks syntax/labels/data. Run executes with safety step limit.</div>
-          </div>
-        </div>
-      </section>
+            <div class="bd">
+              <div class="editorWrap">
+                <div class="gutter" id="gutter"></div>
+                <textarea id="code" spellcheck="false"></textarea>
+              </div>
 
-      <section class="panel">
-        <div class="hd">
-          <h2>Practical Notes</h2>
-          <div class="pill">ORG affects data origin here</div>
-        </div>
-        <div class="bd">
-          <div class="hint" style="margin:0">
-            • <code>ORG 100h</code> sets the <b>data pointer</b> (so <code>STR: DB "ab"</code> becomes at 0100h).<br>
-            • You can use <code>MOV SI, OFFSET STR</code> (supported).<br>
-            • Default memory read size is BYTE unless you specify <code>WORD PTR</code>/<code>DWORD PTR</code>.
+              <div class="hint">
+                <b>Numbers:</b> <span class="pill"><code>123</code></span> <span class="pill"><code>0x7B</code></span> <span class="pill"><code>7Bh</code></span> &nbsp;•&nbsp;
+                <b>Data:</b> <span class="pill"><code>DB</code></span> <span class="pill"><code>DW</code></span> <span class="pill"><code>DD</code></span> (supports <code>"text"</code> and <code>'A'</code>) &nbsp;•&nbsp;
+                <b>Memory:</b> <span class="pill"><code>[SI]</code></span> <span class="pill"><code>[DI+2]</code></span> <span class="pill"><code>[0x200]</code></span> &nbsp;•&nbsp;
+                <b>Size:</b> <span class="pill"><code>BYTE PTR</code></span> <span class="pill"><code>WORD PTR</code></span> <span class="pill"><code>DWORD PTR</code></span> &nbsp;•&nbsp;
+                <b>Addr:</b> <span class="pill"><code>OFFSET label</code></span>
+              </div>
+            </div>
+          </section>
+
+          <div class="rightGrid">
+            <section class="panel">
+              <div class="hd">
+                <span>CPU State</span>
+                <span class="pill">Registers: 16-bit + 8-bit views</span>
+              </div>
+              <div class="bd">
+                <div class="grid2" id="regsGrid"></div>
+                <div style="height:10px"></div>
+                <div class="flags" id="flagsRow"></div>
+                <div style="height:10px"></div>
+                <div class="kv"><span class="k">Cycles</span><span class="v" id="cycles">0</span></div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="hd">
+                <span>Inspector</span>
+                <div class="tabs">
+                  <div class="tab active" data-tab="memory">Memory</div>
+                  <div class="tab" data-tab="output">Output</div>
+                </div>
+              </div>
+              <div class="bd">
+                <div class="tabContent active" id="tab-memory">
+                  <div class="memBar">
+                    <span class="pill">View from</span>
+                    <input id="memStart" value="0x0100" />
+                    <button class="btn" id="memRefresh" type="button">Refresh</button>
+                    <span class="pill">64KB RAM</span>
+                  </div>
+                  <div class="memDump" id="memDump"></div>
+                </div>
+
+                <div class="tabContent" id="tab-output">
+                  <div class="out" id="out"></div>
+                  <div class="hint">Assemble checks syntax/labels/data. Run executes with safety step limit.</div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="hd">
+                <span>Practical Notes</span>
+                <span class="pill">ORG affects data origin here</span>
+              </div>
+              <div class="bd">
+                <div class="hint" style="margin:0">
+                  • <code>ORG 100h</code> sets the <b>data pointer</b> (so <code>STR: DB "ab"</code> becomes at 0100h).<br>
+                  • You can use <code>MOV SI, OFFSET STR</code> (supported).<br>
+                  • Default memory read size is BYTE unless you specify <code>WORD PTR</code>/<code>DWORD PTR</code>.
+                </div>
+              </div>
+            </section>
           </div>
         </div>
-      </section>
+      </div>
     </div>
-  </div>
+  </main>
 
 <script>
 (() => {
@@ -539,12 +603,12 @@
     statusPill.style.borderColor =
       kind==="ok" ? "rgba(22,163,74,.35)" :
       kind==="err"? "rgba(225,29,72,.35)" :
-      kind==="run"? "rgba(37,99,235,.35)" :
+      kind==="run"? "rgba(63,111,255,.35)" :
       "rgba(15,23,42,.14)";
     statusPill.style.background =
       kind==="ok" ? "rgba(22,163,74,.10)" :
       kind==="err"? "rgba(225,29,72,.10)" :
-      kind==="run"? "rgba(37,99,235,.10)" :
+      kind==="run"? "rgba(63,111,255,.10)" :
       "rgba(255,255,255,.70)";
   }
 
@@ -1173,7 +1237,6 @@
     }catch(err){
       setStatus("Runtime error","err");
       logLine(`Runtime error at line ${inst.line}: ${err.message}`, "err");
-      // IMPORTANT: no auto switch to Output tab
       updateUI(); refreshMemory(); refreshGutter();
       return false;
     }
@@ -1187,12 +1250,10 @@
   function runProgram(){
     clearOutput();
     if(!assemble()){
-      // no auto switch to Output tab
       return;
     }
     resetCPU(true);
     setStatus("Running…","run");
-    // IMPORTANT: no auto switch to Output tab
 
     const maxSteps = 200000;
     let steps = 0;
@@ -1282,7 +1343,6 @@
   el("assembleBtn").addEventListener("click", () => {
     if(assemble()){
       resetCPU(true);
-      // IMPORTANT: no auto switch to Output tab
     }
   });
 
@@ -1291,7 +1351,7 @@
   el("stepBtn").addEventListener("click", () => {
     if(program.length === 0){
       clearOutput();
-      if(!assemble()){ return; } // IMPORTANT: no auto switch to Output tab
+      if(!assemble()){ return; }
       resetCPU(true);
       setStatus("Ready to step","run");
       logLine("Step mode ready. Press Step again.", "ok");
@@ -1306,7 +1366,6 @@
     resetCPU(true);
     setStatus("Reset","ok");
     logLine("Reset OK.", "ok");
-    // IMPORTANT: no auto switch to Output tab
   });
 
   baseSel.addEventListener("change", () => { updateUI(); refreshMemory(); });
