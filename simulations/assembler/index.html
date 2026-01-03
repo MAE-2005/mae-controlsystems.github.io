@@ -812,11 +812,30 @@
   function parseMemInside(inside){
     let expr = inside.replace(/\s+/g,"");
     expr = expr.replace(/-/g,"+-");
+    // Support label[reg] or symbol[reg]
+    let labelMatch = expr.match(/^([A-Z_.$][A-Z0-9_.$]*)\[([A-Z0-9+\-]*)\]$/i);
+    if(labelMatch) {
+      const label = labelMatch[1];
+      const regExpr = labelMatch[2];
+      // Parse regExpr as before
+      let baseReg = null;
+      let offset = 0;
+      const chunks = regExpr.split("+").filter(Boolean);
+      for(const c of chunks){
+        const up = c.toUpperCase();
+        if(isReg16(up)) baseReg = up;
+        else{
+          const n = parseNumber(up);
+          if(n === null) return { ok:false, error:`Bad memory expr: [${inside}]` };
+          offset += n;
+        }
+      }
+      return { ok:true, baseReg, offset: clamp16(offset), label };
+    }
+    // Fallback to original
     const chunks = expr.split("+").filter(Boolean);
-
     let baseReg = null;
     let offset = 0;
-
     for(const c of chunks){
       const up = c.toUpperCase();
       if(isReg16(up)) baseReg = up;
@@ -847,6 +866,16 @@
     if(isReg16(up)) return { type:"reg16", name: up, size:16 };
     if(isReg8(up))  return { type:"reg8",  name: up, size:8 };
 
+
+    // Support label[reg] or symbol[reg] as memory operand
+    let labelMemMatch = up.match(/^([A-Z_.$][A-Z0-9_.$]*)\[([A-Z0-9+\- ]*)\]$/i);
+    if(labelMemMatch) {
+      const label = labelMemMatch[1];
+      const regExpr = labelMemMatch[2];
+      const parsed = parseMemInside(label + '[' + regExpr + ']');
+      if(!parsed.ok) return { type:"bad", error: parsed.error };
+      return { type:"mem", baseReg: parsed.baseReg, offset: parsed.offset, label, size: size ?? 8 };
+    }
     if(up.startsWith("[") && up.endsWith("]")){
       const parsed = parseMemInside(up.slice(1,-1));
       if(!parsed.ok) return { type:"bad", error: parsed.error };
