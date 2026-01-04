@@ -5,11 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>MAE Academy</title>
 
-<link rel="icon" type="image/svg+xml" href="favicon-16.svg">
-
-   
+  <link rel="icon" type="image/svg+xml" href="favicon-16.svg">
   <meta name="description" content="MAE Academy: Learn, Build, Simulate — academic tracks and practical simulations with a modern unique landing page." />
-  
 
   <style>
     :root{
@@ -31,7 +28,7 @@
     html,body{height:100%}
     body{
       margin:0;
-      font-family:"Apple Gothic",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; /* fixed: "Apple Gothic" is uncommon */
       color:var(--text);
       transition: opacity 0.5s ease;
       opacity: 0;
@@ -63,28 +60,27 @@
       min-width: 220px;
     }
     .logoMark{
-  width:44px;height:44px;border-radius:14px;
-  background: conic-gradient(from 220deg, var(--brand), var(--brand2), var(--brand));
-  position:relative;
-  box-shadow: 0 14px 30px rgba(63,111,255,.18);
-  overflow:hidden;
-  display:grid;
-  place-items:center;
-}
-
-.logoSvg{
-  width:100%;
-  height:100%;
-  object-fit:contain;
-  filter: brightness(0) invert(1); /* makes svg white */
-  position:relative;
-  z-index:2; /* فوق shimmer */
-}
-
+      width:44px;height:44px;border-radius:14px;
+      background: conic-gradient(from 220deg, var(--brand), var(--brand2), var(--brand));
+      position:relative;
+      box-shadow: 0 14px 30px rgba(63,111,255,.18);
+      overflow:hidden;
+      display:grid;
+      place-items:center;
+    }
+    .logoSvg{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      filter: brightness(0) invert(1);
+      position:relative;
+      z-index:2;
+    }
     .logoMark::after{
       content:""; position:absolute; inset:-60%;
       background: radial-gradient(circle at 35% 35%, rgba(255,255,255,.75), transparent 55%);
       animation: shimmer 5.6s ease-in-out infinite;
+      pointer-events:none; /* small fix: don't capture clicks */
     }
     @keyframes shimmer{
       0%,100%{transform:translate(12%,12%) rotate(0deg)}
@@ -148,7 +144,6 @@
       gap: 26px;
       align-items:center;
     }
-
     .pill{
       display:inline-flex; align-items:center; gap:10px;
       border: 1px solid rgba(9,16,42,.12);
@@ -170,7 +165,6 @@
       0%,100%{transform:scale(1)}
       50%{transform:scale(1.35)}
     }
-
     .headline{
       margin: 16px 0 10px;
       letter-spacing: -1px;
@@ -186,7 +180,6 @@
       font-weight: 600;
       max-width: 66ch;
     }
-
     .heroActions{
       display:flex; gap:12px; flex-wrap:wrap; align-items:center;
     }
@@ -341,6 +334,7 @@
       background: radial-gradient(circle at 25% 25%, rgba(255,255,255,.75), transparent 55%);
       transform: translateX(30%);
       opacity:.6;
+      pointer-events:none;
     }
 
     /* Track chips + tags */
@@ -542,11 +536,9 @@
   <header>
     <div class="container nav">
       <a class="brand" href="#top" aria-label="Home">
-        
         <div class="logoMark" aria-hidden="true">
-  <img class="logoSvg" src="assets/mae.svg" alt="">
-</div>
-
+          <img class="logoSvg" src="assets/mae.svg" alt="">
+        </div>
         <div>
           <h1>MAE Academy</h1>
           <p>Learn • Build • Simulate</p>
@@ -563,7 +555,7 @@
 
       <div class="actions">
         <button class="btn menuhint" type="button" id="jumpMenu">Menu</button>
-        <a class="btn" href="#simhub" style="border: none;">Open Sim Hub</a>
+        <a class="btn" href="#simhub" style="border:none;">Open Sim Hub</a>
         <a class="btn primary" href="#contact">Start ↗</a>
       </div>
     </div>
@@ -590,12 +582,11 @@
           </p>
 
           <div class="heroActions">
-            <button class="bigbtn" type="button" id="btnCourses">
-              🎓 Academic Courses
-            </button>
-            <button class="bigbtn primary" type="button" onclick="location.href='simulations/'">
-              ⚙️ Practical Simulations
-            </button>
+            <button class="bigbtn" type="button" id="btnCourses">🎓 Academic Courses</button>
+
+            <!-- small fix: use an anchor (better semantics + works with transition handler) -->
+            <a class="bigbtn primary" href="simulations/">⚙️ Practical Simulations</a>
+
             <a class="btn ghost" href="#tracks">Explore tracks ↓</a>
           </div>
 
@@ -919,142 +910,171 @@
   </footer>
 
   <script>
+    // ---- Helpers ----
+    const prefersReduce = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     // Mobile menu hint: jump to sections quickly
     const jumpBtn = document.getElementById("jumpMenu");
-    if(jumpBtn){
+    if (jumpBtn) {
       jumpBtn.addEventListener("click", () => {
         const target = document.querySelector("#tracks");
-        if(target) target.scrollIntoView({behavior:"smooth"});
+        if (target) target.scrollIntoView({ behavior: "smooth" });
       });
     }
 
     // Hero buttons
-    document.getElementById("btnCourses").addEventListener("click", () => {
-      const target = document.querySelector("#tracks");
-      if(target) target.scrollIntoView({behavior:"smooth"});
-    });
+    const btnCourses = document.getElementById("btnCourses");
+    if (btnCourses) {
+      btnCourses.addEventListener("click", () => {
+        const target = document.querySelector("#tracks");
+        if (target) target.scrollIntoView({ behavior: "smooth" });
+      });
+    }
 
-    // Reveal on scroll
+    // Reveal on scroll (safe fallback if IntersectionObserver not supported)
     const revealEls = document.querySelectorAll(".reveal");
-    const io = new IntersectionObserver((entries) => {
-      for(const e of entries){
-        if(e.isIntersecting){
-          e.target.classList.add("isVisible");
-          io.unobserve(e.target);
+    if ("IntersectionObserver" in window) {
+      const io = new IntersectionObserver((entries, obs) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            e.target.classList.add("isVisible");
+            obs.unobserve(e.target);
+          }
         }
-      }
-    }, {threshold: 0.14});
-    revealEls.forEach(el => io.observe(el));
+      }, { threshold: 0.14 });
+      revealEls.forEach(el => io.observe(el));
+    } else {
+      revealEls.forEach(el => el.classList.add("isVisible"));
+    }
 
     // Animated counters
     const counters = document.querySelectorAll(".count");
     let started = false;
 
-    function animateCount(el, target, duration=1100){
+    function animateCount(el, target, duration = 1100) {
       const start = performance.now();
       const from = 0;
-      function frame(now){
+
+      function frame(now) {
         const p = Math.min(1, (now - start) / duration);
-        const eased = 1 - Math.pow(1-p, 3);
+        const eased = 1 - Math.pow(1 - p, 3);
         const val = Math.floor(from + (target - from) * eased);
         el.textContent = val.toLocaleString("en");
-        if(p < 1) requestAnimationFrame(frame);
+        if (p < 1) requestAnimationFrame(frame);
       }
       requestAnimationFrame(frame);
     }
 
     const hero = document.querySelector(".hero");
-    const io2 = new IntersectionObserver((entries) => {
-      for(const e of entries){
-        if(e.isIntersecting && !started){
-          started = true;
-          counters.forEach(c => animateCount(c, Number(c.dataset.target)));
-          io2.disconnect();
+    if (hero && "IntersectionObserver" in window) {
+      const io2 = new IntersectionObserver((entries, obs) => {
+        for (const e of entries) {
+          if (e.isIntersecting && !started) {
+            started = true;
+            counters.forEach(c => animateCount(c, Number(c.dataset.target || 0)));
+            obs.disconnect();
+          }
         }
-      }
-    }, {threshold: 0.35});
-    if(hero) io2.observe(hero);
+      }, { threshold: 0.35 });
+      io2.observe(hero);
+    } else {
+      // fallback
+      counters.forEach(c => animateCount(c, Number(c.dataset.target || 0)));
+    }
 
-    // Testimonials slider
+    // Testimonials slider (add null-guards)
     const slides = document.getElementById("slides");
     const dotsWrap = document.getElementById("dots");
-    const total = slides.children.length;
-    let idx = 0;
+    const prevBtn = document.getElementById("prev");
+    const nextBtn = document.getElementById("next");
 
-    function renderDots(){
-      dotsWrap.innerHTML = "";
-      for(let i=0;i<total;i++){
-        const b = document.createElement("button");
-        b.className = "dotbtn" + (i===idx ? " active" : "");
-        b.addEventListener("click", () => go(i));
-        dotsWrap.appendChild(b);
+    if (slides && dotsWrap && prevBtn && nextBtn) {
+      const total = slides.children.length;
+      let idx = 0;
+
+      function renderDots() {
+        dotsWrap.innerHTML = "";
+        for (let i = 0; i < total; i++) {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "dotbtn" + (i === idx ? " active" : "");
+          b.addEventListener("click", () => go(i));
+          dotsWrap.appendChild(b);
+        }
       }
-    }
-    function go(i){
-      idx = (i + total) % total;
-      slides.style.transform = `translateX(-${idx * 100}%)`;
-      renderDots();
-    }
-    document.getElementById("prev").addEventListener("click", () => go(idx - 1));
-    document.getElementById("next").addEventListener("click", () => go(idx + 1));
-    renderDots();
-    go(0);
 
-    // Auto advance
-    setInterval(() => {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if(!reduce) go(idx + 1);
-    }, 6500);
+      function go(i) {
+        idx = (i + total) % total;
+        slides.style.transform = `translateX(-${idx * 100}%)`;
+        renderDots();
+      }
 
-    // FAQ accordion
+      prevBtn.addEventListener("click", () => go(idx - 1));
+      nextBtn.addEventListener("click", () => go(idx + 1));
+      go(0);
+
+      // Auto advance (don’t animate if reduced motion)
+      setInterval(() => {
+        if (!prefersReduce()) go(idx + 1);
+      }, 6500);
+    }
+
+    // FAQ accordion (guard)
     document.querySelectorAll(".faqItem").forEach(item => {
-      item.querySelector(".faqQ").addEventListener("click", () => {
-        item.classList.toggle("open");
-      });
+      const q = item.querySelector(".faqQ");
+      if (!q) return;
+      q.addEventListener("click", () => item.classList.toggle("open"));
     });
 
-    // Demo form submit
-    document.getElementById("contactForm").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const msg = document.getElementById("formMsg");
-      msg.textContent = "Received ✅ We'll get back to you soon.";
-      setTimeout(() => msg.textContent = "", 4500);
-      e.target.reset();
-    });
-
-    // Page transition
-    window.addEventListener('load', () => {
-      document.body.style.opacity = '1';
-    });
-    document.addEventListener('click', e => {
-      const link = e.target.closest('a');
-      if (link && link.href && !link.href.startsWith('javascript') && !link.target) {
+    // Demo form submit (guard)
+    const contactForm = document.getElementById("contactForm");
+    if (contactForm) {
+      contactForm.addEventListener("submit", (e) => {
         e.preventDefault();
-        document.body.style.opacity = '0';
-        setTimeout(() => {
-          window.location = link.href;
-        }, 250);
-      }
-    });
+        const msg = document.getElementById("formMsg");
+        if (msg) {
+          msg.textContent = "Received ✅ We'll get back to you soon.";
+          setTimeout(() => (msg.textContent = ""), 4500);
+        }
+        e.target.reset();
+      });
+    }
 
-    // Year
-    document.getElementById("year").textContent = new Date().getFullYear();
+    // Page transition (SINGLE implementation — removed duplicate script)
+    function enablePageTransitions() {
+      // Show page
+      document.body.style.opacity = "1";
+
+      // Intercept normal links only
+      document.addEventListener("click", (e) => {
+        const link = e.target.closest("a");
+        if (!link) return;
+
+        const href = link.getAttribute("href") || "";
+        // allow in-page anchors, new tabs, downloads, and modified-clicks
+        const isHashOnly = href.startsWith("#");
+        const isMailOrTel = href.startsWith("mailto:") || href.startsWith("tel:");
+        const modified = e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0;
+
+        if (modified || isHashOnly || isMailOrTel || link.target || link.hasAttribute("download")) return;
+
+        e.preventDefault();
+        document.body.style.opacity = "0";
+        setTimeout(() => (window.location.href = link.href), 250);
+      });
+
+      // If user presses back/forward, ensure opacity is correct
+      window.addEventListener("pageshow", () => {
+        document.body.style.opacity = "1";
+      });
+    }
+
+    // Run after load
+    window.addEventListener("load", enablePageTransitions);
+
+    // Year (guard)
+    const yearEl = document.getElementById("year");
+    if (yearEl) yearEl.textContent = new Date().getFullYear();
   </script>
 </body>
-<script>
-// Page transition
-window.addEventListener('load', () => {
-  document.body.style.opacity = '1';
-});
-document.addEventListener('click', e => {
-  const link = e.target.closest('a');
-  if (link && link.href && !link.href.startsWith('javascript') && !link.target) {
-    e.preventDefault();
-    document.body.style.opacity = '0';
-    setTimeout(() => {
-      window.location = link.href;
-    }, 150);
-  }
-});
-</script>
 </html>
